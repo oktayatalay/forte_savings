@@ -100,11 +100,11 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./deploy/
-        server-dir: ./
+        server-dir: /
         port: 21
         protocol: ftp
         timeout: 60000
-        log-level: minimal
+        log-level: verbose
         dry-run: false
         state-name: .ftp-deploy-sync-state.json
         exclude: |
