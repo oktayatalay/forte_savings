@@ -1,20 +1,15 @@
-import { useTranslations } from 'next-intl';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LanguageToggle } from "@/components/language-toggle";
 import { PiggyBank, BarChart3, Zap } from "lucide-react";
 
 export default function HomePage() {
-  const t = useTranslations();
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t('home.title')}</h1>
+          <h1 className="text-2xl font-bold">Forte Savings</h1>
           <div className="flex gap-2">
-            <LanguageToggle />
             <ThemeToggle />
           </div>
         </div>
@@ -23,18 +18,18 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4">
-            {t('home.subtitle')}
+            Tasarruf Yönetim Sistemi
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            {t('home.description')}
+            Tasarruflarınızı profesyonelce yönetin
           </p>
           
           <div className="flex justify-center gap-4">
             <Button size="lg">
-              {t('common.login')}
+              Giriş Yap
             </Button>
             <Button variant="outline" size="lg">
-              {t('common.register')}
+              Kayıt Ol
             </Button>
           </div>
         </div>
@@ -45,11 +40,11 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <PiggyBank className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>{t('home.features.tracking.title')}</CardTitle>
+              <CardTitle>Tasarruf Takibi</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                {t('home.features.tracking.description')}
+                Tasarruflarınızı kolayca takip edin ve hedeflerinize ulaşın
               </CardDescription>
             </CardContent>
           </Card>
@@ -59,11 +54,11 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>{t('home.features.reporting.title')}</CardTitle>
+              <CardTitle>Raporlama</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                {t('home.features.reporting.description')}
+                Detaylı raporlarla tasarruf performansınızı analiz edin
               </CardDescription>
             </CardContent>
           </Card>
@@ -73,11 +68,11 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle>{t('home.features.quick_actions.title')}</CardTitle>
+              <CardTitle>Hızlı İşlemler</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                {t('home.features.quick_actions.description')}
+                Tek tıkla tasarruf ekleme ve düzenleme işlemleri
               </CardDescription>
             </CardContent>
           </Card>
@@ -90,11 +85,15 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full">
-                  Test Database Connection
+                <Button variant="outline" className="w-full" asChild>
+                  <a href="/api/test/database.php" target="_blank">
+                    Test Database Connection
+                  </a>
                 </Button>
-                <Button variant="outline" className="w-full">
-                  Test API Endpoints
+                <Button variant="outline" className="w-full" asChild>
+                  <a href="/api/test/system.php" target="_blank">
+                    Test API System
+                  </a>
                 </Button>
               </div>
             </CardContent>
