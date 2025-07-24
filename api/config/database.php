@@ -7,10 +7,29 @@ class Database {
     private $conn;
 
     public function __construct() {
-        $this->host = $_ENV['DB_HOST'] ?? 'localhost';
-        $this->db_name = $_ENV['DB_NAME'] ?? 'forte_savings';
-        $this->username = $_ENV['DB_USER'] ?? 'root';
-        $this->password = $_ENV['DB_PASS'] ?? '';
+        // Load .env file if exists
+        $envFile = __DIR__ . '/../../.env';
+        if (file_exists($envFile)) {
+            $this->loadEnv($envFile);
+        }
+        
+        $this->host = $this->getEnvVar('DB_HOST', 'localhost');
+        $this->db_name = $this->getEnvVar('DB_NAME', 'forte_savings');
+        $this->username = $this->getEnvVar('DB_USER', 'root');
+        $this->password = $this->getEnvVar('DB_PASS', '');
+    }
+    
+    private function loadEnv($file) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, '#') === 0) continue;
+            list($key, $value) = explode('=', $line, 2);
+            $_ENV[trim($key)] = trim($value);
+        }
+    }
+    
+    private function getEnvVar($key, $default = '') {
+        return $_ENV[$key] ?? getenv($key) ?: $default;
     }
 
     public function getConnection() {
@@ -29,7 +48,7 @@ class Database {
             );
         } catch(PDOException $exception) {
             error_log("Connection error: " . $exception->getMessage());
-            throw new Exception("Database connection failed");
+            throw new Exception("Database connection failed: " . $exception->getMessage());
         }
 
         return $this->conn;
