@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function ResetPasswordPage() {
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     token: '',
     newPassword: '',
@@ -22,6 +24,14 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    // URL'den token parametresini al
+    const token = searchParams.get('token');
+    if (token) {
+      setFormData(prev => ({ ...prev, token }));
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

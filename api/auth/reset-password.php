@@ -1,6 +1,7 @@
 <?php
 require_once '../config/cors.php';
 require_once '../config/database.php';
+require_once '../config/mail.php';
 
 header('Content-Type: application/json');
 
@@ -33,7 +34,7 @@ if (isset($input['email'])) {
         $pdo = getDBConnection();
         
         // Kullanıcı var mı kontrol et
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND is_active = TRUE");
+        $stmt = $pdo->prepare("SELECT id, first_name FROM users WHERE email = ? AND is_active = TRUE");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -68,11 +69,16 @@ if (isset($input['email'])) {
         
         $audit_stmt->execute([$user['id'], $user['id'], $new_values, $ip_address, $user_agent]);
         
-        // Başarılı yanıt (gerçek uygulamada email gönderilmeli)
+        // Email gönderimi
+        $mailService = new MailService();
+        $emailSent = $mailService->sendPasswordResetEmail($email, $user['first_name'], $reset_token);
+        
+        // Başarılı yanıt
         http_response_code(200);
         echo json_encode([
             'message' => 'Password reset instructions have been sent to your email',
-            'reset_token' => $reset_token // Gerçek uygulamada bu email ile gönderilmeli
+            'email_sent' => $emailSent,
+            'reset_token' => $emailSent ? null : $reset_token // Sadece email gönderilmediyse token'ı döndür
         ]);
         
     } catch (PDOException $e) {

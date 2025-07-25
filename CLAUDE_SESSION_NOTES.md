@@ -20,7 +20,8 @@
   - `/auth/login` - Giriş sayfası
   - `/auth/register` - Kayıt sayfası  
   - `/auth/forgot-password` - Şifremi unuttum
-  - `/auth/reset-password` - Şifre sıfırlama
+  - `/auth/reset-password` - Şifre sıfırlama (URL token desteği)
+- **Email Sistemi**: SMTP entegrasyonu tamamlandı, otomatik email gönderimi aktif
 - **Dashboard**: Temel kullanıcı paneli oluşturuldu
 - **Güvenlik**: Rol bazlı erişim (admin, user, cc), audit logging
 - **Test Durumu**: ✅ Çalışıyor
@@ -117,9 +118,9 @@ forte_savings/
 - ✅ Admin şifre hash problemi → Düzeltildi
 - ✅ Dashboard 404 hatası → Sayfa oluşturuldu
 - ✅ Forgot password eksikliği → Tamamlandı
+- ✅ Email sistemi entegrasyonu → SMTP ile mail gönderimi eklendi
 
 ### **Mevcut Sınırlamalar**
-- Email gönderimi henüz aktif değil (SMTP yapılandırması gerekli)
 - Proje verileri henüz yok (boş dashboard)
 - Admin paneli henüz geliştirilmedi
 
@@ -138,7 +139,15 @@ forte_savings/
 2. Her değişiklikten sonra `docs/development_log.md`'yi güncelle
 3. Shadcn/UI dışında UI kütüphanesi kullanma
 4. Güvenlik kontrollerini ihmal etme
-5. Her aşama sonunda commit yap
+5. **ÖNEMLİ:** Her commit öncesi `CLAUDE_SESSION_NOTES.md` dosyasını güncelle
+6. Her aşama sonunda commit yap
+
+### **Commit Öncesi Zorunlu Kontrol Listesi**
+- [ ] `CLAUDE_SESSION_NOTES.md` dosyası güncellenmiş mi?
+- [ ] Mevcut durum ve son işlemler eklenmiş mi?  
+- [ ] Sonraki adımlar listesi güncel mi?
+- [ ] Bilinen sorunlar bölümü güncellenmiş mi?
+- [ ] Son güncelleme bölümündeki tarih ve commit ID'si doğru mu?
 
 ### **Test Edilecek URL'ler**
 - Ana sayfa: https://savings.forte.works
@@ -156,9 +165,10 @@ forte_savings/
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Forgot password sayfaları eklendi  
-**Sonraki Adım**: Proje listesi API'si ve frontend'i geliştir  
-**Commit ID**: `8439e62` - Dashboard ve authentication düzeltmeleri
+**Son İşlem**: Email sistemi entegrasyonu tamamlandı  
+**Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
+**Commit ID**: Güncellenecek - Email entegrasyonu  
+**Not**: Authentication sistemi tamamen tamamlandı, artık proje yönetimine geçilebilir
 
 ---
 

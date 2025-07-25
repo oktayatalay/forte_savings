@@ -1,6 +1,7 @@
 <?php
 require_once '../config/cors.php';
 require_once '../config/database.php';
+require_once '../config/mail.php';
 
 header('Content-Type: application/json');
 
@@ -94,6 +95,10 @@ try {
     
     $audit_stmt->execute([$user_id, $user_id, $new_values, $ip_address, $user_agent]);
     
+    // Email gönderimi
+    $mailService = new MailService();
+    $emailSent = $mailService->sendVerificationEmail($email, $first_name, $verification_token);
+    
     // Başarılı yanıt
     http_response_code(201);
     echo json_encode([
@@ -101,7 +106,8 @@ try {
         'user_id' => $user_id,
         'email' => $email,
         'verification_required' => true,
-        'verification_token' => $verification_token // Gerçek uygulamada bu email ile gönderilmeli
+        'email_sent' => $emailSent,
+        'verification_token' => $emailSent ? null : $verification_token // Sadece email gönderilmediyse token'ı döndür
     ]);
     
 } catch (PDOException $e) {
