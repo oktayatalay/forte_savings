@@ -58,11 +58,11 @@ try {
     // Arama filtresi ekle
     if (!empty($search)) {
         $base_where .= " AND (
-            p.frn LIKE :search OR 
-            p.customer LIKE :search OR 
-            p.project_name LIKE :search OR
-            p.forte_responsible LIKE :search OR
-            p.project_director LIKE :search
+            p.frn LIKE :search1 OR 
+            p.customer LIKE :search2 OR 
+            p.project_name LIKE :search3 OR
+            p.forte_responsible LIKE :search4 OR
+            p.project_director LIKE :search5
         )";
     }
     
@@ -72,7 +72,12 @@ try {
         $count_params['user_id'] = $user_id;
     }
     if (!empty($search)) {
-        $count_params['search'] = '%' . $search . '%';
+        $search_term = '%' . $search . '%';
+        $count_params['search1'] = $search_term;
+        $count_params['search2'] = $search_term;
+        $count_params['search3'] = $search_term;
+        $count_params['search4'] = $search_term;
+        $count_params['search5'] = $search_term;
     }
     
     // Toplam kayıt sayısını al (limit/offset olmadan)

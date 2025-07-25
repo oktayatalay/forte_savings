@@ -139,7 +139,7 @@ forte_savings/
 - ✅ Authorization header sorunu → Çoklu yöntemle header okuma, FastCGI desteği
 - ✅ Frontend response parsing hatası → Pagination optional yapıldı
 - ✅ Ana API list.php 500 hatası → SQL parameter binding sorunu, list-simple.php kullanılıyor
-- ✅ Search SQLSTATE[HY093] hatası → Admin user parameter binding uyumsuzluğu düzeltildi
+- ✅ Search SQLSTATE[HY093] hatası → SQL'de :search 5 kez kullanımı, :search1-5 olarak düzeltildi
 - ✅ Invalid Date sorunu → Tarih formatı kontrolü eklendi
 - ✅ Admin permission badge hatası → Admin için özel turuncu badge
 
@@ -201,10 +201,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Admin search parameter binding kesin çözüm - Refactor edildi  
+**Son İşlem**: Search parameter :search 5 kez kullanımı sorunu çözülüyor  
 **Sonraki Adım**: Aşama 3 - Proje detay sayfası veya filtreleme özellikleri  
-**Commit ID**: `474f645` - Admin search parameter binding kesin çözüm  
-**Not**: Search artık admin/non-admin için tamamen çalışmalı - parameter binding refactor edildi
+**Commit ID**: Bekliyor (search1-5 parameter fix)  
+**Not**: SQL'de :search 5 kez kullanılıyordu, :search1-5 olarak ayrıldı
 
 ---
 
