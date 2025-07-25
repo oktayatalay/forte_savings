@@ -22,7 +22,8 @@ import {
   Edit,
   Trash2,
   MoreHorizontal,
-  Building
+  Building,
+  DollarSign
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ProjectForm } from '@/components/project-form';
@@ -49,6 +50,8 @@ interface Project {
   user_permission: 'owner' | 'cc' | 'none' | 'admin';
   last_savings_date: string | null;
   savings_records_count: number;
+  actual_savings: number;
+  cost_avoidance: number;
 }
 
 interface ProjectsTableProps {
@@ -392,10 +395,16 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                       Başlangıç {getSortIcon('group_in')}
                     </div>
                   </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('total_savings')}>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('actual_savings')}>
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      Tasarruf {getSortIcon('total_savings')}
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                      Tasarruf {getSortIcon('actual_savings')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('cost_avoidance')}>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-blue-600" />
+                      Maliyet Eng. {getSortIcon('cost_avoidance')}
                     </div>
                   </TableHead>
                   <TableHead>Yetki</TableHead>
@@ -436,10 +445,20 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     <TableCell>
                       <div>
                         <p className="font-medium text-green-600">
-                          {formatCurrency(project.total_savings)}
+                          {formatCurrency(project.actual_savings)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {project.savings_records_count} kayıt
+                          Tasarruf
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-blue-600">
+                          {formatCurrency(project.cost_avoidance)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Maliyet Eng.
                         </p>
                       </div>
                     </TableCell>

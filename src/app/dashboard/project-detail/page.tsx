@@ -62,10 +62,18 @@ interface ProjectTeam {
 
 interface Statistics {
   total_savings_records: number;
+  by_currency: Array<{
+    currency: string;
+    savings: number;
+    cost_avoidance: number;
+    total: number;
+    record_count: number;
+  }>;
+  last_record_date: string | null;
+  // Backward compatibility
   total_cost_avoidance: number;
   total_savings: number;
   total_amount: number;
-  last_record_date: string | null;
 }
 
 function ProjectDetailContent() {
@@ -396,9 +404,23 @@ function ProjectDetailContent() {
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(statistics.total_savings)}
-              </div>
+              {statistics.by_currency.length === 0 ? (
+                <div className="text-2xl font-bold text-green-600">₺0</div>
+              ) : (
+                <div className="space-y-1">
+                  {statistics.by_currency
+                    .filter(currencyData => currencyData.savings > 0)
+                    .sort((a, b) => b.savings - a.savings)
+                    .map((currencyData, index) => (
+                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold text-green-600" : "text-sm font-medium text-green-600"}>
+                      {formatCurrency(currencyData.savings, currencyData.currency)}
+                    </div>
+                  ))}
+                  {statistics.by_currency.every(c => c.savings === 0) && (
+                    <div className="text-2xl font-bold text-green-600">₺0</div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -407,9 +429,23 @@ function ProjectDetailContent() {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(statistics.total_cost_avoidance)}
-              </div>
+              {statistics.by_currency.length === 0 ? (
+                <div className="text-2xl font-bold text-blue-600">₺0</div>
+              ) : (
+                <div className="space-y-1">
+                  {statistics.by_currency
+                    .filter(currencyData => currencyData.cost_avoidance > 0)
+                    .sort((a, b) => b.cost_avoidance - a.cost_avoidance)
+                    .map((currencyData, index) => (
+                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold text-blue-600" : "text-sm font-medium text-blue-600"}>
+                      {formatCurrency(currencyData.cost_avoidance, currencyData.currency)}
+                    </div>
+                  ))}
+                  {statistics.by_currency.every(c => c.cost_avoidance === 0) && (
+                    <div className="text-2xl font-bold text-blue-600">₺0</div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card>

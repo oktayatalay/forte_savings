@@ -26,12 +26,15 @@ interface DashboardStats {
     this_month: number;
   };
   savings: {
-    total: number;
-    this_year: number;
-    this_month: number;
-    records_count: number;
-    actual_savings: number;
-    cost_avoidance: number;
+    by_currency: Array<{
+      currency: string;
+      savings: number;
+      cost_avoidance: number;
+      total: number;
+      record_count: number;
+    }>;
+    total_records: number;
+    primary_currency_total: number;
   };
   recent_activities: Array<{
     activity_type: string;
@@ -238,19 +241,27 @@ export default function DashboardPage() {
             <CardContent>
               {statsLoading ? (
                 <div className="text-2xl font-bold animate-pulse">...</div>
+              ) : dashboardStats?.savings.by_currency.length === 0 ? (
+                <div className="text-2xl font-bold">₺0</div>
               ) : (
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('tr-TR', {
-                    style: 'currency',
-                    currency: 'TRY',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                  }).format(dashboardStats?.savings.total || 0)}
+                <div className="space-y-1">
+                  {dashboardStats?.savings.by_currency
+                    .sort((a, b) => b.total - a.total) // En yüksekten düşüğe
+                    .map((currencyData, index) => (
+                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold" : "text-sm font-medium"}>
+                      {new Intl.NumberFormat('tr-TR', {
+                        style: 'currency',
+                        currency: currencyData.currency,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      }).format(currencyData.total)}
+                    </div>
+                  ))}
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
                 {statsLoading ? 'Yükleniyor...' : 
-                 `${dashboardStats?.savings.records_count || 0} kayıt`}
+                 `${dashboardStats?.savings.total_records || 0} kayıt`}
               </p>
             </CardContent>
           </Card>

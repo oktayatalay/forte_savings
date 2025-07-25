@@ -49,21 +49,52 @@ try {
     $project_stats_stmt->execute($project_params);
     $project_stats = $project_stats_stmt->fetch(PDO::FETCH_ASSOC);
     
-    // 2. Tasarruf İstatistikleri
+    // 2. Tasarruf İstatistikleri (Currency bazında)
     $savings_stats_sql = "SELECT 
-        COALESCE(SUM(p.total_savings), 0) as total_savings,
-        COALESCE(SUM(CASE WHEN YEAR(sr.created_at) = YEAR(CURDATE()) THEN sr.total_price ELSE 0 END), 0) as savings_this_year,
-        COALESCE(SUM(CASE WHEN MONTH(sr.created_at) = MONTH(CURDATE()) AND YEAR(sr.created_at) = YEAR(CURDATE()) THEN sr.total_price ELSE 0 END), 0) as savings_this_month,
-        COUNT(sr.id) as total_savings_records,
-        COALESCE(SUM(CASE WHEN sr.type = 'Savings' THEN sr.total_price ELSE 0 END), 0) as actual_savings,
-        COALESCE(SUM(CASE WHEN sr.type = 'Cost Avoidance' THEN sr.total_price ELSE 0 END), 0) as cost_avoidance
+        sr.currency,
+        sr.type,
+        COALESCE(SUM(sr.total_price), 0) as total_amount,
+        COUNT(sr.id) as record_count
         FROM projects p 
         LEFT JOIN savings_records sr ON p.id = sr.project_id
-        WHERE p.is_active = TRUE AND " . $project_condition;
+        WHERE p.is_active = TRUE AND sr.id IS NOT NULL AND " . $project_condition . "
+        GROUP BY sr.currency, sr.type
+        ORDER BY sr.currency, sr.type";
     
     $savings_stats_stmt = $pdo->prepare($savings_stats_sql);
     $savings_stats_stmt->execute($project_params);
-    $savings_stats = $savings_stats_stmt->fetch(PDO::FETCH_ASSOC);
+    $raw_savings_stats = $savings_stats_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Currency bazında organize et
+    $savings_by_currency = [];
+    $total_records = 0;
+    
+    foreach ($raw_savings_stats as $stat) {
+        $currency = $stat['currency'];
+        $type = $stat['type'];
+        $amount = floatval($stat['total_amount']);
+        $count = intval($stat['record_count']);
+        
+        if (!isset($savings_by_currency[$currency])) {
+            $savings_by_currency[$currency] = [
+                'currency' => $currency,
+                'savings' => 0,
+                'cost_avoidance' => 0,
+                'total' => 0,
+                'record_count' => 0
+            ];
+        }
+        
+        if ($type === 'Savings') {
+            $savings_by_currency[$currency]['savings'] = $amount;
+        } else {
+            $savings_by_currency[$currency]['cost_avoidance'] = $amount;
+        }
+        
+        $savings_by_currency[$currency]['total'] += $amount;
+        $savings_by_currency[$currency]['record_count'] += $count;
+        $total_records += $count;
+    }
     
     // 3. Son Aktiviteler (Son 10 işlem)
     $recent_activities_sql = "SELECT 
@@ -135,12 +166,10 @@ try {
             'this_month' => intval($project_stats['projects_this_month'])
         ],
         'savings' => [
-            'total' => floatval($savings_stats['total_savings']),
-            'this_year' => floatval($savings_stats['savings_this_year']),
-            'this_month' => floatval($savings_stats['savings_this_month']),
-            'records_count' => intval($savings_stats['total_savings_records']),
-            'actual_savings' => floatval($savings_stats['actual_savings']),
-            'cost_avoidance' => floatval($savings_stats['cost_avoidance'])
+            'by_currency' => array_values($savings_by_currency),
+            'total_records' => $total_records,
+            // Backward compatibility için ana currency (TRY) bilgisi
+            'primary_currency_total' => isset($savings_by_currency['TRY']) ? $savings_by_currency['TRY']['total'] : 0
         ],
         'recent_activities' => array_map(function($activity) {
             return [

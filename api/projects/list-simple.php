@@ -105,7 +105,9 @@ try {
         CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
         '" . ($user_role === 'admin' ? 'admin' : 'owner') . "' as user_permission,
         (SELECT COUNT(*) FROM savings_records sr WHERE sr.project_id = p.id) as savings_records_count,
-        (SELECT sr.date FROM savings_records sr WHERE sr.project_id = p.id ORDER BY sr.date DESC LIMIT 1) as last_savings_date
+        (SELECT sr.date FROM savings_records sr WHERE sr.project_id = p.id ORDER BY sr.date DESC LIMIT 1) as last_savings_date,
+        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Savings' THEN sr.total_price ELSE 0 END), 0) FROM savings_records sr WHERE sr.project_id = p.id) as actual_savings,
+        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Cost Avoidance' THEN sr.total_price ELSE 0 END), 0) FROM savings_records sr WHERE sr.project_id = p.id) as cost_avoidance
         FROM projects p 
         LEFT JOIN users u ON p.created_by = u.id
         {$base_where}

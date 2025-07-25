@@ -107,27 +107,49 @@ try {
         $record['total_price'] = floatval($record['total_price']);
     }
     
-    // Proje istatistiklerini hesapla
-    $stats = [
-        'total_savings_records' => count($savings_records),
-        'total_cost_avoidance' => 0,
-        'total_savings' => 0,
-        'total_amount' => 0,
-        'last_record_date' => null
-    ];
+    // Proje istatistiklerini currency bazında hesapla
+    $stats_by_currency = [];
+    $total_records = count($savings_records);
+    $last_record_date = null;
     
     foreach ($savings_records as $record) {
-        if ($record['type'] === 'Cost Avoidance') {
-            $stats['total_cost_avoidance'] += $record['total_price'];
-        } else {
-            $stats['total_savings'] += $record['total_price'];
-        }
-        $stats['total_amount'] += $record['total_price'];
+        $currency = $record['currency'];
+        $type = $record['type'];
+        $amount = floatval($record['total_price']);
         
-        if (!$stats['last_record_date'] || $record['date'] > $stats['last_record_date']) {
-            $stats['last_record_date'] = $record['date'];
+        if (!isset($stats_by_currency[$currency])) {
+            $stats_by_currency[$currency] = [
+                'currency' => $currency,
+                'savings' => 0,
+                'cost_avoidance' => 0,
+                'total' => 0,
+                'record_count' => 0
+            ];
+        }
+        
+        if ($type === 'Savings') {
+            $stats_by_currency[$currency]['savings'] += $amount;
+        } else {
+            $stats_by_currency[$currency]['cost_avoidance'] += $amount;
+        }
+        
+        $stats_by_currency[$currency]['total'] += $amount;
+        $stats_by_currency[$currency]['record_count']++;
+        
+        if (!$last_record_date || $record['date'] > $last_record_date) {
+            $last_record_date = $record['date'];
         }
     }
+    
+    $stats = [
+        'total_savings_records' => $total_records,
+        'by_currency' => array_values($stats_by_currency),
+        'last_record_date' => $last_record_date,
+        // Backward compatibility - legacy fields
+        'total_cost_avoidance' => array_sum(array_column($stats_by_currency, 'cost_avoidance')),
+        'total_savings' => array_sum(array_column($stats_by_currency, 'savings')),
+        'total_amount' => array_sum(array_column($stats_by_currency, 'total'))
+    ];
     
     // CC kişilerini al
     $cc_sql = "SELECT 
