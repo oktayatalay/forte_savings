@@ -50,7 +50,7 @@ try {
             p.created_by = :user_id OR 
             EXISTS (
                 SELECT 1 FROM project_permissions pp 
-                WHERE pp.project_id = p.id AND pp.user_id = :user_id
+                WHERE pp.project_id = p.id AND pp.user_id = :user_id2
             )
         )";
     }
@@ -70,6 +70,7 @@ try {
     $count_params = [];
     if ($user_role !== 'admin') {
         $count_params['user_id'] = $user_id;
+        $count_params['user_id2'] = $user_id;
     }
     if (!empty($search)) {
         $search_term = '%' . $search . '%';

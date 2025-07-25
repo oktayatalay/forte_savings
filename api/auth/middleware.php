@@ -177,7 +177,7 @@ function requireAdmin() {
 }
 
 function requireUserOrAbove() {
-    return requireAuth(['user', 'cc', 'admin']);
+    return requireAuth(['user', 'admin']);
 }
 
 function requireProjectAccess($project_id, $auth_data) {

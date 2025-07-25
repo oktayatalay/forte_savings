@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
-    role ENUM('admin', 'user', 'cc') DEFAULT 'user',
+    role ENUM('admin', 'user') DEFAULT 'user',
     is_active BOOLEAN DEFAULT TRUE,
     email_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255) NULL,

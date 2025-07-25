@@ -144,7 +144,8 @@ forte_savings/
 - ✅ Admin permission badge hatası → Admin için özel turuncu badge
 
 ### **Aktif Sorunlar**
-- Yok (tüm temel sistemler çalışıyor)
+- 🔧 Non-admin user search parametresi eksikliği → Search yaparken SQLSTATE[HY093] hatası
+- 🔧 CC user role mantık hatası → CC proje bazlı yetki olmalı, user tipi değil
 
 ### **Mevcut Sınırlamalar**
 - Ana API list.php'de 500 hatası (complex query problemi)
@@ -201,10 +202,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Search parameter :search 5 kez kullanımı sorunu çözülüyor  
-**Sonraki Adım**: Aşama 3 - Proje detay sayfası veya filtreleme özellikleri  
-**Commit ID**: `ee48464` - Search :search 5 kez kullanımı sorunu çözüldü  
-**Not**: SQL'de :search 5 kez kullanılıyordu, :search1-5 olarak ayrıldı
+**Son İşlem**: CC user role mantık hatası düzeltiliyor - CC proje bazlı yetki olmalı  
+**Sonraki Adım**: Non-admin search hatası çözümü, sonra Aşama 3  
+**Commit ID**: Bekliyor (CC role refactor)  
+**Not**: CC user tipi kaldırıldı, sadece admin/user kaldı. CC project_permissions'da proje bazlı
 
 ---
 
