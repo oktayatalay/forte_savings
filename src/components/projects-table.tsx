@@ -81,7 +81,7 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
         sort_order: sortOrder
       };
 
-      const response = await fetch('/api/projects/list.php', {
+      const response = await fetch('/api/projects/list-simple.php', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
