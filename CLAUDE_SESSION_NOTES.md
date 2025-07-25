@@ -203,7 +203,7 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 **Tarih**: 25 Temmuz 2025  
 **Son İşlem**: Search parameter :search 5 kez kullanımı sorunu çözülüyor  
 **Sonraki Adım**: Aşama 3 - Proje detay sayfası veya filtreleme özellikleri  
-**Commit ID**: Bekliyor (search1-5 parameter fix)  
+**Commit ID**: `ee48464` - Search :search 5 kez kullanımı sorunu çözüldü  
 **Not**: SQL'de :search 5 kez kullanılıyordu, :search1-5 olarak ayrıldı
 
 ---
