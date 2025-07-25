@@ -25,11 +25,15 @@ export default function HomePage() {
           </p>
           
           <div className="flex justify-center gap-4">
-            <Button size="lg">
-              Giriş Yap
+            <Button size="lg" asChild>
+              <a href="/auth/login">
+                Giriş Yap
+              </a>
             </Button>
-            <Button variant="outline" size="lg">
-              Kayıt Ol
+            <Button variant="outline" size="lg" asChild>
+              <a href="/auth/register">
+                Kayıt Ol
+              </a>
             </Button>
           </div>
         </div>
