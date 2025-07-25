@@ -28,15 +28,19 @@
 - **Güvenlik**: Rol bazlı erişim (admin, user, cc), audit logging
 - **Test Durumu**: ✅ Çalışıyor
 
-- **Proje Listesi API**: `/api/projects/list.php` - JWT korumalı, sayfalama ve filtreleme destekli
+- **Proje Listesi API**: `/api/projects/list-simple.php` - JWT korumalı, tam özellikli
 - **Proje Tablosu Frontend**: Dashboard'a entegre edilen responsive tablo komponenti
+- **Test Verisi**: 3 proje (AstraZeneca, Pfizer, Novartis) + tasarruf kayıtları
 - **Özellikler**:
   - Kullanıcının sahip olduğu + CC olduğu projeleri listeler
-  - FRN, müşteri, proje adı ile arama yapılabilir
+  - FRN, müşteri, proje adı, sorumlu, direktör ile arama yapılabilir
   - Tüm sütunlar sıralanabilir (FRN, müşteri, sorumlu, tarih, tasarruf vb.)
   - Sayfalama desteği (10 kayıt/sayfa)
-  - Kullanıcı yetkisi badge'i (Sahip/CC/Görüntüleyici)
+  - Kullanıcı yetkisi badge'i (Admin/Sahip/CC/Görüntüleyici)
   - Responsive tasarım
+  - Gerçek zamanlı search (500ms debounce)
+  - Tarih formatlaması (dd.mm.yyyy)
+  - Para birimi formatlaması (₺ TRY)
 
 #### **Aşama 0.5: Temel Kurulum** - ✅ TAMAMLANDI  
 - Next.js 15, TypeScript, Tailwind CSS, Shadcn/UI kurulumu
@@ -132,14 +136,21 @@ forte_savings/
 - ✅ Email sistemi entegrasyonu → SMTP ile mail gönderimi eklendi
 - ✅ SMTP bağlantı hatası → PHPMailer ile çözüldü (forte_crm yapısı kullanıldı)
 - ✅ Şifre sıfırlama token hatası → Çözüldü (kullanıcı bildirimi)
+- ✅ Authorization header sorunu → Çoklu yöntemle header okuma, FastCGI desteği
+- ✅ Frontend response parsing hatası → Pagination optional yapıldı
+- ✅ Ana API list.php 500 hatası → SQL parameter binding sorunu, list-simple.php kullanılıyor
+- ✅ Search SQLSTATE[HY093] hatası → Parameter sayısı uyumsuzluğu düzeltildi
+- ✅ Invalid Date sorunu → Tarih formatı kontrolü eklendi
+- ✅ Admin permission badge hatası → Admin için özel turuncu badge
 
 ### **Aktif Sorunlar**
 - Yok (tüm temel sistemler çalışıyor)
 
 ### **Mevcut Sınırlamalar**
-- Henüz proje verisi yok (test için proje eklenebilir)
-- Proje detay sayfası geliştirilmedi
+- Ana API list.php'de 500 hatası (complex query problemi)
+- Proje detay sayfası geliştirilmedi ("Detay" butonları henüz çalışmıyor)
 - Admin paneli henüz geliştirilmedi
+- Filtreleme özellikleri eksik (müşteri, sorumlu, tarih aralığı dropdown'ları)
 
 ---
 
@@ -190,10 +201,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Aşama 2 tamamlandı - Proje listesi sistemi eklendi  
-**Sonraki Adım**: Aşama 3 - Proje detay sayfası geliştir  
-**Commit ID**: Bekliyor (şu anki session'da tamamlandı)  
-**Not**: Proje listesi API'si ve frontend tablosu hazır, build başarılı
+**Son İşlem**: Search SQLSTATE[HY093] hatası düzeltildi - Parameter binding sorunu çözüldü  
+**Sonraki Adım**: Aşama 3 - Proje detay sayfası veya filtreleme özellikleri  
+**Commit ID**: Bekliyor (search fix commit edilecek)  
+**Not**: Proje listesi tamamen çalışıyor - 3 test projesi, search, sıralama, sayfalama OK
 
 ---
 

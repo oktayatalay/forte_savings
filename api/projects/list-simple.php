@@ -69,11 +69,16 @@ try {
         $params['search'] = '%' . $search . '%';
     }
     
-    // Toplam kayıt sayısını al
+    // Toplam kayıt sayısını al (limit/offset olmadan)
     $count_sql = "SELECT COUNT(*) FROM projects p " . $base_where;
     $count_stmt = $pdo->prepare($count_sql);
     $count_stmt->execute($params);
     $total_records = $count_stmt->fetchColumn();
+    
+    // Ana sorgu için parametreleri ekle
+    $query_params = $params;
+    $query_params['limit'] = $limit;
+    $query_params['offset'] = $offset;
     
     // Ana sorgu
     $sql = "SELECT 
@@ -92,11 +97,8 @@ try {
         LIMIT :limit OFFSET :offset
     ";
     
-    $params['limit'] = $limit;
-    $params['offset'] = $offset;
-    
     $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
+    $stmt->execute($query_params);
     
     $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
