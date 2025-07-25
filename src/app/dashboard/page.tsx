@@ -89,13 +89,6 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">Tasarruf Yönetim Sistemi</p>
           </div>
           <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => setShowProjectForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Building className="w-4 h-4" />
-              Yeni Proje
-            </Button>
             <div className="text-right">
               <p className="font-medium">{user?.first_name} {user?.last_name}</p>
               <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
@@ -173,16 +166,20 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Button className="w-full justify-start" variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Yeni Proje Oluştur
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
                 Proje Listesi
               </Button>
               <Button className="w-full justify-start" variant="outline">
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Raporlar
+              </Button>
+              <Button 
+                onClick={() => setShowProjectForm(true)}
+                className="w-full justify-start" 
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Hızlı Proje Oluştur
               </Button>
             </CardContent>
           </Card>
@@ -206,7 +203,10 @@ export default function DashboardPage() {
 
         {/* Projects Table */}
         <div className="mb-8">
-          <ProjectsTable onProjectUpdated={() => window.location.reload()} />
+          <ProjectsTable 
+            onProjectUpdated={() => window.location.reload()} 
+            onNewProject={() => setShowProjectForm(true)}
+          />
         </div>
 
         {/* Admin Panel Link */}

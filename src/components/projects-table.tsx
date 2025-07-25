@@ -21,7 +21,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  MoreHorizontal
+  MoreHorizontal,
+  Building
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ProjectForm } from '@/components/project-form';
@@ -53,6 +54,7 @@ interface Project {
 interface ProjectsTableProps {
   className?: string;
   onProjectUpdated?: () => void;
+  onNewProject?: () => void;
 }
 
 interface DeleteConfirmation {
@@ -61,7 +63,7 @@ interface DeleteConfirmation {
   loading: boolean;
 }
 
-export function ProjectsTable({ className, onProjectUpdated }: ProjectsTableProps) {
+export function ProjectsTable({ className, onProjectUpdated, onNewProject }: ProjectsTableProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -309,8 +311,19 @@ export function ProjectsTable({ className, onProjectUpdated }: ProjectsTableProp
               Sahip olduğunuz ve CC olarak atandığınız projeler
             </CardDescription>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Toplam: {totalRecords} proje
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Toplam: {totalRecords} proje
+            </div>
+            {onNewProject && (
+              <Button 
+                onClick={onNewProject}
+                className="flex items-center gap-2"
+              >
+                <Building className="w-4 h-4" />
+                Yeni Proje
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

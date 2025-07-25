@@ -124,25 +124,25 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
   useEffect(() => {
     if (editProject) {
       setFormData({
-        frn: editProject.frn,
-        entity: editProject.entity,
-        customer: editProject.customer,
-        project_name: editProject.project_name,
-        event_type: editProject.event_type,
-        project_type: editProject.project_type,
-        group_in: editProject.group_in,
-        group_out: editProject.group_out,
-        location: editProject.location,
-        hotels: editProject.hotels,
-        po_amount: editProject.po_amount.toString(),
-        forte_responsible: editProject.forte_responsible,
-        project_director: editProject.project_director,
-        forte_cc_person: editProject.forte_cc_person,
-        client_representative: editProject.client_representative,
-        customer_po_number: editProject.customer_po_number,
-        hcp_count: editProject.hcp_count.toString(),
-        colleague_count: editProject.colleague_count.toString(),
-        external_non_hcp_count: editProject.external_non_hcp_count.toString()
+        frn: editProject.frn || '',
+        entity: editProject.entity || '',
+        customer: editProject.customer || '',
+        project_name: editProject.project_name || '',
+        event_type: editProject.event_type || '',
+        project_type: editProject.project_type || '',
+        group_in: editProject.group_in || '',
+        group_out: editProject.group_out || '',
+        location: editProject.location || '',
+        hotels: editProject.hotels || '',
+        po_amount: (editProject.po_amount ?? 0).toString(),
+        forte_responsible: editProject.forte_responsible || '',
+        project_director: editProject.project_director || '',
+        forte_cc_person: editProject.forte_cc_person || '',
+        client_representative: editProject.client_representative || '',
+        customer_po_number: editProject.customer_po_number || '',
+        hcp_count: (editProject.hcp_count ?? 0).toString(),
+        colleague_count: (editProject.colleague_count ?? 0).toString(),
+        external_non_hcp_count: (editProject.external_non_hcp_count ?? 0).toString()
       });
     } else {
       // Yeni proje için form'u sıfırla
