@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp, Plus, Edit, Trash } from 'lucide-react';
 import { SavingsRecordForm } from '@/components/savings-record-form';
+import { ProjectForm } from '@/components/project-form';
 
 interface ProjectDetail {
   id: number;
@@ -35,6 +36,7 @@ interface ProjectDetail {
   created_by_email: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 interface SavingsRecord {
@@ -81,6 +83,7 @@ function ProjectDetailContent() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SavingsRecord | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showProjectEditForm, setShowProjectEditForm] = useState(false);
 
   useEffect(() => {
     const fetchProjectDetail = async () => {
@@ -268,6 +271,18 @@ function ProjectDetailContent() {
     setEditingRecord(null);
   };
 
+  const handleProjectUpdated = (updatedProject: any) => {
+    // Proje bilgilerini güncelle
+    if (project) {
+      setProject({ ...project, ...updatedProject });
+    }
+    setShowProjectEditForm(false);
+  };
+
+  const canEditProject = () => {
+    return userPermission === 'owner' || userPermission === 'admin';
+  };
+
   const formatCurrency = (amount: number, currency: string = 'TRY') => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
@@ -358,6 +373,16 @@ function ProjectDetailContent() {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {canEditProject() && (
+            <Button 
+              onClick={() => setShowProjectEditForm(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              Projeyi Düzenle
+            </Button>
+          )}
           {getPermissionBadge(userPermission)}
         </div>
       </div>
@@ -613,6 +638,16 @@ function ProjectDetailContent() {
           projectId={project.id}
           onSuccess={editingRecord ? handleSavingsRecordUpdated : handleSavingsRecordAdded}
           editRecord={editingRecord}
+        />
+      )}
+
+      {/* Project Edit Form Modal */}
+      {project && (
+        <ProjectForm
+          open={showProjectEditForm}
+          onOpenChange={setShowProjectEditForm}
+          onSuccess={handleProjectUpdated}
+          editProject={project}
         />
       )}
     </div>
