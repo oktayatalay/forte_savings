@@ -35,7 +35,13 @@ class MailService {
     
     public function sendMail($to, $subject, $body, $isHtml = true) {
         if (empty($this->smtp_host) || empty($this->smtp_user) || empty($this->smtp_pass)) {
-            error_log("SMTP configuration missing");
+            error_log("SMTP configuration missing - falling back to development mode");
+            return false; // Geliştirme modunda email gönderme devre dışı
+        }
+        
+        // Güvenlik için sadece @fortetourism.com adreslerine gönder
+        if (!str_ends_with($to, '@fortetourism.com')) {
+            error_log("Email sending blocked for non-company domain: " . $to);
             return false;
         }
         
@@ -52,19 +58,15 @@ class MailService {
             $headers[] = 'Content-type: text/plain; charset=UTF-8';
         }
         
-        // PHP mail() fonksiyonu için SMTP ayarları
-        ini_set('SMTP', $this->smtp_host);
-        ini_set('smtp_port', $this->smtp_port);
-        ini_set('sendmail_from', $this->smtp_user);
-        
         try {
+            // Basit mail() fonksiyonu kullan
             $success = mail($to, $subject, $body, implode("\r\n", $headers));
             
             if ($success) {
                 error_log("Email sent successfully to: " . $to);
                 return true;
             } else {
-                error_log("Failed to send email to: " . $to);
+                error_log("Mail function failed for: " . $to);
                 return false;
             }
         } catch (Exception $e) {

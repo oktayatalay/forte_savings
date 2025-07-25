@@ -22,6 +22,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,6 +81,9 @@ export default function RegisterPage() {
 
       if (response.ok) {
         setSuccess(true);
+        if (data.verification_token) {
+          setVerificationToken(data.verification_token);
+        }
       } else {
         setError(data.error || 'Kayıt başarısız');
       }
@@ -107,6 +111,21 @@ export default function RegisterPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Hesabınızı aktif etmek için e-posta adresinizi kontrol edin ve doğrulama linkine tıklayın.
             </p>
+            
+            {verificationToken && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-xs text-yellow-800 mb-2">
+                  <strong>Email gönderilemedi.</strong> Manuel doğrulama için:
+                </p>
+                <code className="text-xs bg-yellow-100 px-2 py-1 rounded">
+                  {verificationToken}
+                </code>
+                <p className="text-xs text-yellow-700 mt-2">
+                  Bu token'ı kullanarak manuel olarak email doğrulayın
+                </p>
+              </div>
+            )}
+            
             <Link href="/auth/login">
               <Button className="w-full">
                 Giriş Sayfasına Dön

@@ -143,11 +143,19 @@ forte_savings/
 6. Her aşama sonunda commit yap
 
 ### **Commit Öncesi Zorunlu Kontrol Listesi**
+- [ ] **ÖNEMLİ:** `npm run build` komutu çalıştırılmış ve başarılı mı?
 - [ ] `CLAUDE_SESSION_NOTES.md` dosyası güncellenmiş mi?
 - [ ] Mevcut durum ve son işlemler eklenmiş mi?  
 - [ ] Sonraki adımlar listesi güncel mi?
 - [ ] Bilinen sorunlar bölümü güncellenmiş mi?
 - [ ] Son güncelleme bölümündeki tarih ve commit ID'si doğru mu?
+
+### **Build Test Kuralı**
+**Her commit öncesi MUTLAKA şunu çalıştır:**
+```bash
+npm run build
+```
+Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece build başarılı olduktan sonra commit yap. Bu sayede GitHub Actions deployment'ında hata almayız.
 
 ### **Test Edilecek URL'ler**
 - Ana sayfa: https://savings.forte.works
@@ -165,10 +173,10 @@ forte_savings/
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Next.js build hatası düzeltildi (useSearchParams Suspense)  
+**Son İşlem**: Email sistemi iyileştirildi ve bağlantı hatası düzeltildi  
 **Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
-**Commit ID**: Güncellenecek - Build fix  
-**Not**: Authentication sistemi tamamen tamamlandı, email entegrasyonu aktif
+**Commit ID**: Güncellenecek - Email fix  
+**Not**: Email sistemi fallback modda, token manuel görüntüleniyor
 
 ---
 
