@@ -176,7 +176,7 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 **Tarih**: 25 Temmuz 2025  
 **Son İşlem**: PHPMailer entegrasyonu tamamlandı (forte_crm yapısı)  
 **Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
-**Commit ID**: Güncellenecek - PHPMailer fix  
+**Commit ID**: `f9a887c` - PHPMailer entegrasyonu  
 **Not**: Email sistemi artık tam çalışır durumda
 
 ---

@@ -101,18 +101,33 @@ if (isset($input['email'])) {
     try {
         $pdo = getDBConnection();
         
-        // Token'ı kontrol et
+        // Token'ı kontrol et - debug ile
         $stmt = $pdo->prepare("
-            SELECT id, email 
+            SELECT id, email, password_reset_token, password_reset_expires 
             FROM users 
-            WHERE password_reset_token = ? AND password_reset_expires > NOW() AND is_active = TRUE
+            WHERE password_reset_token = ? AND is_active = TRUE
         ");
         $stmt->execute([$token]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Debug log
+        error_log("Reset password attempt - Token: " . $token);
+        if ($user) {
+            error_log("User found - expires: " . $user['password_reset_expires'] . ", current: " . date('Y-m-d H:i:s'));
+            // Token süresi kontrolü
+            if (strtotime($user['password_reset_expires']) <= time()) {
+                error_log("Token expired");
+                http_response_code(400);
+                echo json_encode(['error' => 'Reset token has expired']);
+                exit;
+            }
+        } else {
+            error_log("No user found with this token");
+        }
+        
         if (!$user) {
             http_response_code(400);
-            echo json_encode(['error' => 'Invalid or expired reset token']);
+            echo json_encode(['error' => 'Invalid reset token']);
             exit;
         }
         
