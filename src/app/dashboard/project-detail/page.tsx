@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp, Plus } from 'lucide-react';
+import { SavingsRecordForm } from '@/components/savings-record-form';
 
 interface ProjectDetail {
   id: number;
@@ -77,6 +78,7 @@ function ProjectDetailContent() {
   const [userPermission, setUserPermission] = useState<string>('viewer');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     const fetchProjectDetail = async () => {
@@ -136,6 +138,30 @@ function ProjectDetailContent() {
 
     fetchProjectDetail();
   }, [projectId, router]);
+
+  const handleSavingsRecordAdded = (newRecord: SavingsRecord) => {
+    // Yeni kayıt eklendikten sonra listeyi güncelle
+    setSavingsRecords(prev => [newRecord, ...prev]);
+    
+    // İstatistikleri güncelle
+    if (statistics) {
+      const newStats = { ...statistics };
+      newStats.total_savings_records += 1;
+      
+      if (newRecord.type === 'Savings') {
+        newStats.total_savings += newRecord.total_price;
+      } else {
+        newStats.total_cost_avoidance += newRecord.total_price;
+      }
+      newStats.total_amount += newRecord.total_price;
+      
+      if (!newStats.last_record_date || newRecord.date > newStats.last_record_date) {
+        newStats.last_record_date = newRecord.date;
+      }
+      
+      setStatistics(newStats);
+    }
+  };
 
   const formatCurrency = (amount: number, currency: string = 'TRY') => {
     return new Intl.NumberFormat('tr-TR', {
@@ -386,10 +412,23 @@ function ProjectDetailContent() {
       {/* Savings Records Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Tasarruf Kayıtları</CardTitle>
-          <CardDescription>
-            {savingsRecords.length} kayıt bulundu • Toplam: {formatCurrency(statistics?.total_amount || 0)}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Tasarruf Kayıtları</CardTitle>
+              <CardDescription>
+                {savingsRecords.length} kayıt bulundu • Toplam: {formatCurrency(statistics?.total_amount || 0)}
+              </CardDescription>
+            </div>
+            {(userPermission === 'admin' || userPermission === 'owner' || userPermission === 'cc') && (
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Yeni Kayıt Ekle
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {savingsRecords.length > 0 ? (
@@ -434,6 +473,16 @@ function ProjectDetailContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Savings Record Form Modal */}
+      {project && (
+        <SavingsRecordForm
+          open={showAddForm}
+          onOpenChange={setShowAddForm}
+          projectId={project.id}
+          onSuccess={handleSavingsRecordAdded}
+        />
+      )}
     </div>
   );
 }
