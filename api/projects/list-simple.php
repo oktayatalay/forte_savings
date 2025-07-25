@@ -73,9 +73,13 @@ try {
     
     // Toplam kayıt sayısını al (limit/offset olmadan)
     $count_sql = "SELECT COUNT(*) FROM projects p " . $base_where;
-    $count_stmt = $pdo->prepare($count_sql);
-    $count_stmt->execute($params);
-    $total_records = $count_stmt->fetchColumn();
+    try {
+        $count_stmt = $pdo->prepare($count_sql);
+        $count_stmt->execute($params);
+        $total_records = $count_stmt->fetchColumn();
+    } catch (Exception $count_error) {
+        throw new Exception("Count query error: " . $count_error->getMessage() . " | SQL: " . $count_sql . " | Params: " . json_encode($params));
+    }
     
     // Ana sorgu için parametreleri ekle
     $query_params = $params;
@@ -99,8 +103,12 @@ try {
         LIMIT :limit OFFSET :offset
     ";
     
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($query_params);
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($query_params);
+    } catch (Exception $main_error) {
+        throw new Exception("Main query error: " . $main_error->getMessage() . " | SQL: " . substr($sql, 0, 300) . "... | Params: " . json_encode($query_params));
+    }
     
     $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -155,7 +163,15 @@ try {
         'success' => false,
         'error' => $e->getMessage(),
         'file' => $e->getFile(),
-        'line' => $e->getLine()
+        'line' => $e->getLine(),
+        'debug' => [
+            'user_role' => $user_role ?? 'unknown',
+            'user_id' => $user_id ?? 'unknown',
+            'search_term' => $search ?? '',
+            'base_where' => $base_where ?? 'unknown',
+            'params' => $params ?? [],
+            'sql_preview' => isset($sql) ? substr($sql, 0, 200) . '...' : 'not set'
+        ]
     ]);
 }
 ?>
