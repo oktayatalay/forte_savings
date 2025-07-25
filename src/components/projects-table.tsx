@@ -18,8 +18,14 @@ import {
   FileText, 
   Calendar,
   TrendingUp,
-  Eye
+  Eye,
+  Edit,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ProjectForm } from '@/components/project-form';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Project {
   id: number;
@@ -39,16 +45,23 @@ interface Project {
   created_at: string;
   updated_at: string;
   created_by_name: string;
-  user_permission: 'owner' | 'cc' | 'none';
+  user_permission: 'owner' | 'cc' | 'none' | 'admin';
   last_savings_date: string | null;
   savings_records_count: number;
 }
 
 interface ProjectsTableProps {
   className?: string;
+  onProjectUpdated?: () => void;
 }
 
-export function ProjectsTable({ className }: ProjectsTableProps) {
+interface DeleteConfirmation {
+  project: Project;
+  show: boolean;
+  loading: boolean;
+}
+
+export function ProjectsTable({ className, onProjectUpdated }: ProjectsTableProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +77,15 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('updated_at');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  
+  // Edit/Delete states
+  const [editProject, setEditProject] = useState<any>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation>({
+    project: {} as Project,
+    show: false,
+    loading: false
+  });
 
   const fetchProjects = async () => {
     try {
@@ -176,6 +198,94 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
       default:
         return <Badge variant="outline">Görüntüleyici</Badge>;
     }
+  };
+
+  const handleEdit = (project: Project) => {
+    setEditProject(project);
+    setShowEditForm(true);
+  };
+
+  const handleProjectUpdated = (updatedProject: any) => {
+    // Listeyi güncelle - API'den gelen temel proje bilgilerini mevcut proje ile merge et
+    setProjects(prev => prev.map(p => {
+      if (p.id === updatedProject.id) {
+        return {
+          ...p,
+          ...updatedProject,
+          user_permission: p.user_permission, // Mevcut permission'ı koru
+          last_savings_date: p.last_savings_date, // Mevcut değerleri koru
+          savings_records_count: p.savings_records_count
+        };
+      }
+      return p;
+    }));
+    setShowEditForm(false);
+    setEditProject(null);
+    if (onProjectUpdated) {
+      onProjectUpdated();
+    }
+  };
+
+  const handleDeleteRequest = (project: Project) => {
+    setDeleteConfirmation({
+      project,
+      show: true,
+      loading: false
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmation.project.id) return;
+    
+    setDeleteConfirmation(prev => ({ ...prev, loading: true }));
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch('/api/projects/delete.php', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          id: deleteConfirmation.project.id,
+          confirm: true 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (data.success) {
+        // Projeyi listeden kaldır
+        setProjects(prev => prev.filter(p => p.id !== deleteConfirmation.project.id));
+        setDeleteConfirmation({ project: {} as Project, show: false, loading: false });
+        if (onProjectUpdated) {
+          onProjectUpdated();
+        }
+      } else {
+        throw new Error(data.error || 'Proje silinirken hata oluştu');
+      }
+    } catch (err) {
+      console.error('Project delete error:', err);
+      setError(err instanceof Error ? err.message : 'Proje silinirken hata oluştu');
+      setDeleteConfirmation(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const canEditProject = (project: Project) => {
+    return project.user_permission === 'owner' || project.user_permission === 'admin';
+  };
+
+  const canDeleteProject = (project: Project) => {
+    return project.user_permission === 'owner' || project.user_permission === 'admin';
   };
 
   if (error) {
@@ -324,14 +434,43 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
                       {getPermissionBadge(project.user_permission)}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => router.push(`/dashboard/project-detail?id=${project.id}`)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Detay
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/project-detail?id=${project.id}`)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Detay
+                        </Button>
+                        
+                        {(canEditProject(project) || canDeleteProject(project)) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {canEditProject(project) && (
+                                <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Düzenle
+                                </DropdownMenuItem>
+                              )}
+                              {canDeleteProject(project) && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteRequest(project)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Sil
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -385,6 +524,44 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
           </>
         )}
       </CardContent>
+      
+      {/* Edit Project Modal */}
+      <ProjectForm
+        open={showEditForm}
+        onOpenChange={setShowEditForm}
+        onSuccess={handleProjectUpdated}
+        editProject={editProject}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmation.show} onOpenChange={(open) => 
+        !deleteConfirmation.loading && setDeleteConfirmation(prev => ({ ...prev, show: open }))
+      }>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Projeyi Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteConfirmation.project.project_name}</strong> projesini silmek istediğinizden emin misiniz?
+              <br /><br />
+              <strong>FRN:</strong> {deleteConfirmation.project.frn}<br />
+              <strong>Müşteri:</strong> {deleteConfirmation.project.customer}<br />
+              <strong>Toplam Tasarruf:</strong> {formatCurrency(deleteConfirmation.project.total_savings || 0)}<br />
+              <br />
+              Bu işlem geri alınamaz ve proje ile ilgili tüm kayıtlar silinecektir.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteConfirmation.loading}>İptal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={deleteConfirmation.loading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteConfirmation.loading ? 'Siliniyor...' : 'Sil'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

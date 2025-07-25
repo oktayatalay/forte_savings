@@ -15,6 +15,8 @@
 #### **Aşama 3: Proje Detay Sayfası** - ✅ TAMAMLANDI
 
 #### **Aşama 4: Tasarruf Kaydı Yönetimi** - ✅ TAMAMLANDI
+
+#### **Aşama 5: Proje Yönetimi** - ✅ TAMAMLANDI
 - **Veritabanı Şeması**: Roadmap'e uygun olarak güncellendi
 - **Authentication API Endpoints**:
   - `/api/auth/register.php` - Kullanıcı kaydı (@fortetourism.com zorunlu)
@@ -82,6 +84,35 @@
   - Proje detay sayfasında edit/delete butonları (actions column)
   - Loading states ve UX iyileştirmeleri
 
+- **Proje CRUD İşlevselliği**: Tam CRUD işlemleri tamamlandı
+- **API Endpoints**:
+  - `/api/projects/create.php` - JWT korumalı, tam validation
+  - `/api/projects/update.php` - JWT korumalı düzenleme (owner/admin)
+  - `/api/projects/delete.php` - JWT korumalı soft delete (owner/admin)
+- **ProjectForm Komponenti**: 4 bölümlü kapsamlı dual-mode form
+  - Temel Bilgiler: FRN, entity, müşteri, proje adı
+  - Tarih ve Lokasyon: Başlangıç/bitiş tarihleri, lokasyon
+  - Sorumlu Kişiler: Forte/müşteri sorumluları
+  - Katılımcı Sayıları: HCP/Forte/Diğer (otomatik toplam hesaplama)
+- **Dashboard Entegrasyonu**:
+  - "Yeni Proje" butonu header'da
+  - Modal form ile proje oluşturma
+  - Real-time liste güncelleme
+- **Proje Listesi UI Geliştirmeleri**:
+  - Edit/Delete dropdown menu butonları
+  - Permission-based görünürlük (owner/admin)
+  - Confirmation dialog ile güvenli silme
+  - Real-time liste güncelleme
+- **Özellikler**:
+  - FRN benzersizlik kontrolü (create/update)
+  - Tarih validasyonu (bitiş > başlangıç)
+  - Dropdown seçenekleri (event types, project types, entities)
+  - Dual-mode form (create/edit modları)
+  - Permission-based işlem kontrolü
+  - Soft delete ile veri güvenliği
+  - Audit logging tüm işlemler için
+  - Real-time validation ve responsive tasarım
+
 #### **Aşama 0.5: Temel Kurulum** - ✅ TAMAMLANDI  
 - Next.js 15, TypeScript, Tailwind CSS, Shadcn/UI kurulumu
 - GitHub Actions deployment sistemi (FTP ile savings.forte.works)
@@ -121,18 +152,17 @@ forte_savings/
 
 ## 🚀 **Sonraki Aşamalar (Öncelik Sırasına Göre)**
 
-### **ŞU ANDA YAPILACAK: Aşama 5 - Proje Yönetimi**
+### **ŞU ANDA YAPILACAK: Aşama 6 - Dashboard İyileştirmeleri**
 
-#### **Öncelik 1: Proje CRUD İşlemleri**
-- Yeni proje ekleme formu ve API
-- Proje düzenleme işlevselliği
-- Proje silme işlevselliği (soft delete)
-- Proje listesinde düzenleme/silme butonları
-
-#### **Öncelik 2: Dashboard Quick Stats Entegrasyonu**
+#### **Öncelik 1: Dashboard Quick Stats Entegrasyonu**
 - API'den gerçek proje sayıları çek
 - Toplam tasarruf miktarı hesapla
 - Son aktiviteler listesi
+
+#### **Öncelik 2: UI/UX İyileştirmeleri**
+- Quick Actions butonlarını işlevsel hale getir
+- Dashboard kartlarını dinamik yap
+- Responsive tasarım optimizasyonları
 
 ### **Sonraki Aşamalar**
 
@@ -238,10 +268,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Tasarruf kaydı CRUD işlemleri tamamlandı (Edit/Delete)  
-**Sonraki Adım**: Aşama 5 - Proje CRUD işlemleri (ekleme/düzenleme/silme)  
-**Commit ID**: b03e22e (Complete CRUD functionality)  
-**Not**: ✅ Tasarruf kayıtları için tam CRUD işlevselliği hazır
+**Son İşlem**: ✅ Aşama 5 tamamlandı - Proje CRUD tam işlevselliği  
+**Sonraki Adım**: Aşama 6 - Dashboard istatistiklerini dinamik hale getir  
+**Commit ID**: [Yeni commit gerekli]  
+**Not**: ✅ Proje yönetimi tam olarak tamamlandı (Create/Read/Update/Delete + UI)
 
 ---
 

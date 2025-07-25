@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ProjectsTable } from '@/components/projects-table';
-import { Loader2, LogOut, Plus, FileText, Users, TrendingUp } from 'lucide-react';
+import { ProjectForm } from '@/components/project-form';
+import { Loader2, LogOut, Plus, FileText, Users, TrendingUp, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,6 +51,11 @@ export default function DashboardPage() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     router.push('/');
+  };
+
+  const handleProjectCreated = (newProject: any) => {
+    // Proje oluşturulduktan sonra sayfayı yenile veya listeyi güncelle
+    window.location.reload(); // Basit çözüm - daha sonra optimize edilebilir
   };
 
   if (loading) {
@@ -82,6 +89,13 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">Tasarruf Yönetim Sistemi</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button 
+              onClick={() => setShowProjectForm(true)}
+              className="flex items-center gap-2"
+            >
+              <Building className="w-4 h-4" />
+              Yeni Proje
+            </Button>
             <div className="text-right">
               <p className="font-medium">{user?.first_name} {user?.last_name}</p>
               <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
@@ -192,7 +206,7 @@ export default function DashboardPage() {
 
         {/* Projects Table */}
         <div className="mb-8">
-          <ProjectsTable />
+          <ProjectsTable onProjectUpdated={() => window.location.reload()} />
         </div>
 
         {/* Admin Panel Link */}
@@ -213,6 +227,13 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Project Form Modal */}
+        <ProjectForm 
+          open={showProjectForm}
+          onOpenChange={setShowProjectForm}
+          onSuccess={handleProjectCreated}
+        />
       </main>
     </div>
   );
