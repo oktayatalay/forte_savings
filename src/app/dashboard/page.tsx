@@ -18,11 +18,49 @@ interface User {
   role: string;
 }
 
+interface DashboardStats {
+  projects: {
+    total: number;
+    active: number;
+    this_year: number;
+    this_month: number;
+  };
+  savings: {
+    total: number;
+    this_year: number;
+    this_month: number;
+    records_count: number;
+    actual_savings: number;
+    cost_avoidance: number;
+  };
+  recent_activities: Array<{
+    activity_type: string;
+    project_id: number;
+    frn: string;
+    project_name: string;
+    customer: string;
+    activity_date: string;
+    user_name: string;
+    activity_description: string;
+    formatted_date: string;
+  }>;
+  top_projects: Array<{
+    id: number;
+    frn: string;
+    project_name: string;
+    customer: string;
+    total_savings: number;
+    records_count: number;
+  }>;
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -38,6 +76,8 @@ export default function DashboardPage() {
     try {
       const userData = JSON.parse(savedUser);
       setUser(userData);
+      // Kullanıcı bilgileri yüklendikten sonra dashboard stats'ı fetch et
+      fetchDashboardStats();
     } catch (err) {
       setError('Kullanıcı bilgileri okunamadı');
       router.push('/auth/login');
@@ -51,6 +91,39 @@ export default function DashboardPage() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     router.push('/');
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setError('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+        return;
+      }
+
+      const response = await fetch('/api/dashboard/stats.php', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'İstatistikler yüklenirken hata oluştu.');
+      }
+
+      if (data.success) {
+        setDashboardStats(data.data);
+      } else {
+        setError(data.error || 'Beklenmeyen bir hata oluştu.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Bağlantı hatası oluştu.');
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
   const handleProjectCreated = (newProject: any) => {
@@ -127,19 +200,33 @@ export default function DashboardPage() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Henüz proje bulunmuyor</p>
+              {statsLoading ? (
+                <div className="text-2xl font-bold animate-pulse">...</div>
+              ) : (
+                <div className="text-2xl font-bold">{dashboardStats?.projects.total || 0}</div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {statsLoading ? 'Yükleniyor...' : 
+                 dashboardStats?.projects.total === 0 ? 'Henüz proje bulunmuyor' :
+                 `${dashboardStats?.projects.active || 0} aktif proje`}
+              </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aktif Projeler</CardTitle>
+              <CardTitle className="text-sm font-medium">Bu Ay</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Bu ay</p>
+              {statsLoading ? (
+                <div className="text-2xl font-bold animate-pulse">...</div>
+              ) : (
+                <div className="text-2xl font-bold">{dashboardStats?.projects.this_month || 0}</div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {statsLoading ? 'Yükleniyor...' : 'yeni proje'}
+              </p>
             </CardContent>
           </Card>
           
@@ -149,8 +236,22 @@ export default function DashboardPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₺0</div>
-              <p className="text-xs text-muted-foreground">Bu yıl</p>
+              {statsLoading ? (
+                <div className="text-2xl font-bold animate-pulse">...</div>
+              ) : (
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat('tr-TR', {
+                    style: 'currency',
+                    currency: 'TRY',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(dashboardStats?.savings.total || 0)}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {statsLoading ? 'Yükleniyor...' : 
+                 `${dashboardStats?.savings.records_count || 0} kayıt`}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -192,11 +293,48 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>Henüz aktivite bulunmuyor</p>
-                <p className="text-sm">İlk projenizi oluşturarak başlayın</p>
-              </div>
+              {statsLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : dashboardStats?.recent_activities.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="mx-auto h-12 w-12 mb-2 opacity-50" />
+                  <p>Henüz aktivite bulunmuyor</p>
+                  <p className="text-sm">İlk projenizi oluşturarak başlayın</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dashboardStats?.recent_activities.slice(0, 5).map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-3 pb-3 border-b border-border last:border-0">
+                      <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {activity.activity_description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.project_name} • {activity.frn} • {activity.user_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.formatted_date}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {(dashboardStats?.recent_activities.length || 0) > 5 && (
+                    <div className="text-center pt-2">
+                      <p className="text-xs text-muted-foreground">
+                        +{(dashboardStats?.recent_activities.length || 0) - 5} daha fazla aktivite
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
