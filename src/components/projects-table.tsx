@@ -81,7 +81,7 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
         sort_order: sortOrder
       };
 
-      const response = await fetch('/api/projects/list-simple.php', {
+      const response = await fetch('/api/projects/list.php', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -153,11 +153,20 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('tr-TR');
+    if (!dateString) return '-';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Geçersiz Tarih';
+      return date.toLocaleDateString('tr-TR');
+    } catch (error) {
+      return 'Geçersiz Tarih';
+    }
   };
 
   const getPermissionBadge = (permission: string) => {
     switch (permission) {
+      case 'admin':
+        return <Badge className="bg-orange-500 text-white">Admin</Badge>;
       case 'owner':
         return <Badge variant="default">Sahip</Badge>;
       case 'cc':
