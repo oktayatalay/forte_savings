@@ -91,6 +91,19 @@ function requireAuth($required_roles = null) {
         $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     }
     
+    // Yöntem 4: PHP input stream'den authorization'ı parse et
+    if (empty($auth_header)) {
+        $headers = getallheaders();
+        if ($headers) {
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    $auth_header = $value;
+                    break;
+                }
+            }
+        }
+    }
+    
     if (!$auth_header || !str_starts_with($auth_header, 'Bearer ')) {
         http_response_code(401);
         echo json_encode([

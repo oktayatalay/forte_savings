@@ -1,7 +1,16 @@
 # Allow Authorization header to pass through
 RewriteEngine On
+
+# Method 1: Direct authorization header
 RewriteCond %{HTTP:Authorization} ^(.*)
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# Method 2: Alternative authorization header names
+RewriteCond %{HTTP:X-Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# Method 3: Handle Authorization header for FastCGI/FPM
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
 # CORS headers for API requests
 Header always set Access-Control-Allow-Origin "*"

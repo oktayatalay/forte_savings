@@ -97,10 +97,11 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
       }
 
       if (data.success) {
-        setProjects(data.data.projects);
-        setCurrentPage(data.data.pagination.current_page);
-        setTotalPages(data.data.pagination.total_pages);
-        setTotalRecords(data.data.pagination.total_records);
+        setProjects(data.data.projects || []);
+        // Basit endpoint için pagination bilgileri olmayabilir
+        setCurrentPage(data.data.pagination?.current_page || 1);
+        setTotalPages(data.data.pagination?.total_pages || 1);
+        setTotalRecords(data.data.pagination?.total_records || data.data.count || 0);
         setError('');
       } else {
         setError(data.error || 'Beklenmeyen bir hata oluştu.');
