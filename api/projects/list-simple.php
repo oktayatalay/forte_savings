@@ -133,10 +133,37 @@ try {
         $project['total_savings'] = floatval($project['total_savings']);
         $project['po_amount'] = floatval($project['po_amount']);
         $project['savings_records_count'] = intval($project['savings_records_count']);
+        $project['actual_savings'] = floatval($project['actual_savings']);
+        $project['cost_avoidance'] = floatval($project['cost_avoidance']);
         
         if ($project['last_savings_date']) {
             $project['last_savings_date'] = date('Y-m-d', strtotime($project['last_savings_date']));
         }
+        
+        // Her proje için currency breakdown'ını al
+        $currency_sql = "SELECT 
+            currency,
+            COALESCE(SUM(CASE WHEN type = 'Savings' THEN total_price ELSE 0 END), 0) as savings,
+            COALESCE(SUM(CASE WHEN type = 'Cost Avoidance' THEN total_price ELSE 0 END), 0) as cost_avoidance,
+            COALESCE(SUM(total_price), 0) as total
+            FROM savings_records 
+            WHERE project_id = ? 
+            GROUP BY currency 
+            HAVING total > 0 
+            ORDER BY total DESC";
+        
+        $currency_stmt = $pdo->prepare($currency_sql);
+        $currency_stmt->execute([$project['id']]);
+        $currency_breakdown = $currency_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Format currency breakdown
+        foreach ($currency_breakdown as &$currency_data) {
+            $currency_data['savings'] = floatval($currency_data['savings']);
+            $currency_data['cost_avoidance'] = floatval($currency_data['cost_avoidance']);
+            $currency_data['total'] = floatval($currency_data['total']);
+        }
+        
+        $project['savings_by_currency'] = $currency_breakdown;
     }
     
     // Sayfalama bilgileri hesapla

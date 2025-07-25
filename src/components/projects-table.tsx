@@ -52,6 +52,12 @@ interface Project {
   savings_records_count: number;
   actual_savings: number;
   cost_avoidance: number;
+  savings_by_currency: Array<{
+    currency: string;
+    savings: number;
+    cost_avoidance: number;
+    total: number;
+  }>;
 }
 
 interface ProjectsTableProps {
@@ -444,22 +450,54 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-green-600">
-                          {formatCurrency(project.actual_savings)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Tasarruf
-                        </p>
+                        {project.savings_by_currency.length === 0 ? (
+                          <p className="font-medium text-green-600">₺0</p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {project.savings_by_currency
+                              .filter(c => c.savings > 0)
+                              .map(currencyData => (
+                              <p key={currencyData.currency} className="text-sm font-medium text-green-600">
+                                {new Intl.NumberFormat('tr-TR', {
+                                  style: 'currency',
+                                  currency: currencyData.currency,
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0
+                                }).format(currencyData.savings)}
+                              </p>
+                            ))}
+                            {project.savings_by_currency.every(c => c.savings === 0) && (
+                              <p className="font-medium text-green-600">₺0</p>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">Tasarruf</p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-blue-600">
-                          {formatCurrency(project.cost_avoidance)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Maliyet Eng.
-                        </p>
+                        {project.savings_by_currency.length === 0 ? (
+                          <p className="font-medium text-blue-600">₺0</p>
+                        ) : (
+                          <div className="space-y-0.5">
+                            {project.savings_by_currency
+                              .filter(c => c.cost_avoidance > 0)
+                              .map(currencyData => (
+                              <p key={currencyData.currency} className="text-sm font-medium text-blue-600">
+                                {new Intl.NumberFormat('tr-TR', {
+                                  style: 'currency',
+                                  currency: currencyData.currency,
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0
+                                }).format(currencyData.cost_avoidance)}
+                              </p>
+                            ))}
+                            {project.savings_by_currency.every(c => c.cost_avoidance === 0) && (
+                              <p className="font-medium text-blue-600">₺0</p>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">Maliyet Eng.</p>
                       </div>
                     </TableCell>
                     <TableCell>

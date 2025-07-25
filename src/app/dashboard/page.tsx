@@ -247,8 +247,8 @@ export default function DashboardPage() {
                 <div className="space-y-1">
                   {dashboardStats?.savings.by_currency
                     .sort((a, b) => b.total - a.total) // En yüksekten düşüğe
-                    .map((currencyData, index) => (
-                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold" : "text-sm font-medium"}>
+                    .map((currencyData) => (
+                    <div key={currencyData.currency} className="text-sm font-bold">
                       {new Intl.NumberFormat('tr-TR', {
                         style: 'currency',
                         currency: currencyData.currency,
