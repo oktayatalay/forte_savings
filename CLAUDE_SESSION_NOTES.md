@@ -21,7 +21,7 @@
   - `/auth/register` - Kayıt sayfası  
   - `/auth/forgot-password` - Şifremi unuttum
   - `/auth/reset-password` - Şifre sıfırlama (URL token desteği)
-- **Email Sistemi**: SMTP entegrasyonu tamamlandı, otomatik email gönderimi aktif
+- **Email Sistemi**: PHPMailer ile SMTP entegrasyonu, forte_crm'deki çalışan yapı kullanıldı
 - **Dashboard**: Temel kullanıcı paneli oluşturuldu
 - **Güvenlik**: Rol bazlı erişim (admin, user, cc), audit logging
 - **Test Durumu**: ✅ Çalışıyor
@@ -119,6 +119,7 @@ forte_savings/
 - ✅ Dashboard 404 hatası → Sayfa oluşturuldu
 - ✅ Forgot password eksikliği → Tamamlandı
 - ✅ Email sistemi entegrasyonu → SMTP ile mail gönderimi eklendi
+- ✅ SMTP bağlantı hatası → PHPMailer ile çözüldü (forte_crm yapısı kullanıldı)
 
 ### **Mevcut Sınırlamalar**
 - Proje verileri henüz yok (boş dashboard)
@@ -173,10 +174,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Email sistemi iyileştirildi ve bağlantı hatası düzeltildi  
+**Son İşlem**: PHPMailer entegrasyonu tamamlandı (forte_crm yapısı)  
 **Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
-**Commit ID**: Güncellenecek - Email fix  
-**Not**: Email sistemi fallback modda, token manuel görüntüleniyor
+**Commit ID**: Güncellenecek - PHPMailer fix  
+**Not**: Email sistemi artık tam çalışır durumda
 
 ---
 

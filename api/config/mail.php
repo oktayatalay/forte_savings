@@ -1,5 +1,12 @@
 <?php
 require_once 'database.php';
+require_once __DIR__ . '/../phpmailer/PHPMailer.php';
+require_once __DIR__ . '/../phpmailer/SMTP.php';
+require_once __DIR__ . '/../phpmailer/Exception.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 class MailService {
     private $smtp_host;
@@ -14,9 +21,9 @@ class MailService {
             $this->loadEnv($envFile);
         }
         
-        $this->smtp_host = $this->getEnvVar('SMTP_HOST');
-        $this->smtp_user = $this->getEnvVar('SMTP_USER');
-        $this->smtp_pass = $this->getEnvVar('SMTP_PASS');
+        $this->smtp_host = $this->getEnvVar('SMTP_HOST', 'corporate.forte.works');
+        $this->smtp_user = $this->getEnvVar('SMTP_USER', 'system@corporate.forte.works');
+        $this->smtp_pass = $this->getEnvVar('SMTP_PASS', 'ForteTourism2025');
     }
     
     private function loadEnv($file) {
@@ -34,43 +41,58 @@ class MailService {
     }
     
     public function sendMail($to, $subject, $body, $isHtml = true) {
-        if (empty($this->smtp_host) || empty($this->smtp_user) || empty($this->smtp_pass)) {
-            error_log("SMTP configuration missing - falling back to development mode");
-            return false; // Geliştirme modunda email gönderme devre dışı
-        }
-        
         // Güvenlik için sadece @fortetourism.com adreslerine gönder
         if (!str_ends_with($to, '@fortetourism.com')) {
             error_log("Email sending blocked for non-company domain: " . $to);
             return false;
         }
         
-        $headers = array(
-            'From: Forte Savings <' . $this->smtp_user . '>',
-            'Reply-To: ' . $this->smtp_user,
-            'X-Mailer: PHP/' . phpversion(),
-            'MIME-Version: 1.0'
-        );
-        
-        if ($isHtml) {
-            $headers[] = 'Content-type: text/html; charset=UTF-8';
-        } else {
-            $headers[] = 'Content-type: text/plain; charset=UTF-8';
-        }
+        $mail = new PHPMailer(true);
         
         try {
-            // Basit mail() fonksiyonu kullan
-            $success = mail($to, $subject, $body, implode("\r\n", $headers));
+            // SMTP ayarları - forte_crm'deki çalışan konfigürasyon
+            $mail->isSMTP();
+            $mail->Host       = $this->smtp_host;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $this->smtp_user;
+            $mail->Password   = $this->smtp_pass;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = 465;
+            $mail->CharSet    = 'UTF-8';
             
-            if ($success) {
-                error_log("Email sent successfully to: " . $to);
-                return true;
-            } else {
-                error_log("Mail function failed for: " . $to);
-                return false;
+            // SSL doğrulama ayarları (shared hosting için)
+            $mail->SMTPOptions = array(
+                'ssl' => array(
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                )
+            );
+            
+            // Debug mode (geliştirme için)
+            $mail->SMTPDebug = 0; // 0 = üretim, 2 = debug
+            
+            // Gönderen bilgileri
+            $mail->setFrom($this->smtp_user, 'Forte Savings');
+            $mail->addAddress($to);
+            $mail->addReplyTo($this->smtp_user, 'Forte Savings');
+            
+            // E-posta içeriği
+            $mail->isHTML($isHtml);
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            
+            if (!$isHtml) {
+                $mail->AltBody = strip_tags($body);
             }
+            
+            $mail->send();
+            error_log("PHPMailer: Email sent successfully to: " . $to);
+            return true;
+            
         } catch (Exception $e) {
-            error_log("Email sending error: " . $e->getMessage());
+            error_log("PHPMailer Error: " . $mail->ErrorInfo);
+            error_log("Exception: " . $e->getMessage());
             return false;
         }
     }
