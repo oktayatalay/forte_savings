@@ -72,12 +72,38 @@ function verifyJWT($token) {
 }
 
 function requireAuth($required_roles = null) {
-    $headers = apache_request_headers();
-    $auth_header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    // Authorization header'ını al - çoklu yöntem desteği
+    $auth_header = '';
+    
+    // Yöntem 1: apache_request_headers() (Apache)
+    if (function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        $auth_header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+    
+    // Yöntem 2: $_SERVER array'i (nginx, diğer sunucular)
+    if (empty($auth_header)) {
+        $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    }
+    
+    // Yöntem 3: Alternatif header isimleri
+    if (empty($auth_header)) {
+        $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    }
     
     if (!$auth_header || !str_starts_with($auth_header, 'Bearer ')) {
         http_response_code(401);
-        echo json_encode(['error' => 'Authorization token required']);
+        echo json_encode([
+            'error' => 'Authorization token required',
+            'debug' => [
+                'auth_header_found' => !empty($auth_header),
+                'auth_header_preview' => substr($auth_header, 0, 20) . '...',
+                'server_vars' => [
+                    'HTTP_AUTHORIZATION' => isset($_SERVER['HTTP_AUTHORIZATION']),
+                    'REDIRECT_HTTP_AUTHORIZATION' => isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])
+                ]
+            ]
+        ]);
         exit;
     }
     
