@@ -44,7 +44,6 @@ try {
     
     // Base WHERE clause
     $base_where = "WHERE p.is_active = TRUE";
-    $params = [];
     
     if ($user_role !== 'admin') {
         $base_where .= " AND (
@@ -54,8 +53,6 @@ try {
                 WHERE pp.project_id = p.id AND pp.user_id = :user_id
             )
         )";
-        // Sadece non-admin için user_id parametresi ekle
-        $params['user_id'] = $user_id;
     }
     
     // Arama filtresi ekle
@@ -67,21 +64,29 @@ try {
             p.forte_responsible LIKE :search OR
             p.project_director LIKE :search
         )";
-        $params['search'] = '%' . $search . '%';
+    }
+    
+    // Count query için parametreleri hazırla
+    $count_params = [];
+    if ($user_role !== 'admin') {
+        $count_params['user_id'] = $user_id;
+    }
+    if (!empty($search)) {
+        $count_params['search'] = '%' . $search . '%';
     }
     
     // Toplam kayıt sayısını al (limit/offset olmadan)
     $count_sql = "SELECT COUNT(*) FROM projects p " . $base_where;
     try {
         $count_stmt = $pdo->prepare($count_sql);
-        $count_stmt->execute($params);
+        $count_stmt->execute($count_params);
         $total_records = $count_stmt->fetchColumn();
     } catch (Exception $count_error) {
-        throw new Exception("Count query error: " . $count_error->getMessage() . " | SQL: " . $count_sql . " | Params: " . json_encode($params));
+        throw new Exception("Count query error: " . $count_error->getMessage() . " | SQL: " . $count_sql . " | Params: " . json_encode($count_params));
     }
     
-    // Ana sorgu için parametreleri ekle
-    $query_params = $params;
+    // Main query için parametreleri hazırla
+    $query_params = $count_params; // Count ile aynı parametreler
     $query_params['limit'] = $limit;
     $query_params['offset'] = $offset;
     
