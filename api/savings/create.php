@@ -99,10 +99,7 @@ try {
         exit;
     }
     
-    // Toplam fiyatı hesapla
-    $total_price = $price * $unit;
-    
-    // Veritabanına kaydet
+    // Veritabanına kaydet (total_price generated column olduğu için manuel değer vermeye gerek yok)
     $sql = "INSERT INTO savings_records (
         project_id, 
         date, 
@@ -113,11 +110,10 @@ try {
         price, 
         unit, 
         currency, 
-        total_price, 
         created_by, 
         created_at, 
         updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
     
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute([
@@ -130,7 +126,6 @@ try {
         $price,
         $unit,
         $currency,
-        $total_price,
         $user_id
     ]);
     

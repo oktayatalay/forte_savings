@@ -13,6 +13,8 @@
 #### **Aşama 2: Kullanıcı Ana Paneli - Proje Listesi** - ✅ TAMAMLANDI
 
 #### **Aşama 3: Proje Detay Sayfası** - ✅ TAMAMLANDI
+
+#### **Aşama 4: Tasarruf Kaydı Yönetimi** - 🔄 DEVAM EDİYOR
 - **Veritabanı Şeması**: Roadmap'e uygun olarak güncellendi
 - **Authentication API Endpoints**:
   - `/api/auth/register.php` - Kullanıcı kaydı (@fortetourism.com zorunlu)
@@ -56,6 +58,18 @@
   - Navigation breadcrumbs
   - Çalışan "Detay" butonları proje listesinde
 
+- **Tasarruf Kaydı Ekleme API**: `/api/savings/create.php` - JWT korumalı, tam validation
+- **Tasarruf Kaydı Ekleme Modal**: Responsive form komponenti
+- **Özellikler**:
+  - Otomatik total_price hesaplama (price × unit)
+  - Multi-currency desteği (TRY, USD, EUR, GBP)
+  - Kategori ve açıklama seçenekleri (dropdown)
+  - Real-time validation (frontend + backend)
+  - Permission-based erişim (admin/owner/cc)
+  - Başarılı ekleme sonrası otomatik liste ve istatistik güncelleme
+  - Modal form UI komponenti (Dialog, Select, Textarea)
+  - Proje detay sayfasına entegre "Yeni Kayıt Ekle" butonu
+
 #### **Aşama 0.5: Temel Kurulum** - ✅ TAMAMLANDI  
 - Next.js 15, TypeScript, Tailwind CSS, Shadcn/UI kurulumu
 - GitHub Actions deployment sistemi (FTP ile savings.forte.works)
@@ -97,16 +111,19 @@ forte_savings/
 
 ### **ŞU ANDA YAPILACAK: Aşama 4 - Tasarruf Kaydı Yönetimi**
 
-#### **Öncelik 1: Dashboard Quick Stats Entegrasyonu**
+#### **Öncelik 1: CRITICAL BUG FIX - Generated Column Hatası**
+- 🚨 API'deki total_price field'ını kaldır (generated column çakışması)
+- Database schema kontrolü yap
+- Test et ve düzelt
+
+#### **Öncelik 2: Tasarruf Kaydı CRUD Tamamlama**
+- Kayıt düzenleme/silme işlemleri
+- Dashboard Quick Stats entegrasyonu
+
+#### **Öncelik 3: Dashboard Quick Stats Entegrasyonu**
 - API'den gerçek proje sayıları çek
 - Toplam tasarruf miktarı hesapla
 - Son aktiviteler listesi
-
-#### **Öncelik 2: Tasarruf Kaydı CRUD İşlemleri**
-- Yeni tasarruf kaydı ekleme formu
-- Kayıt düzenleme/silme işlemleri
-- Otomatik hesaplama (Price × Unit = Total Price)
-- Kategori seçimleri
 
 ### **Sonraki Aşamalar**
 
@@ -148,7 +165,9 @@ forte_savings/
 - ✅ CC user role mantık hatası → Database schema değiştirildi, middleware güncellendi
 
 ### **Aktif Sorunlar**
-- Yok! Tüm kritik hatalar çözüldü ✅
+- 🚨 **CRITICAL**: SQLSTATE[HY000]: General error: 3105 The value specified for generated column 'total_price' in table 'savings_records' is not allowed
+  - Veritabanında total_price GENERATED COLUMN olarak tanımlanmış ama API'de manuel değer vermeye çalışıyoruz
+  - Çözüm: API'den total_price field'ını kaldırıp sadece price ve unit göndermek gerekiyor
 
 ### **Mevcut Sınırlamalar**
 - Ana API list.php'de 500 hatası (complex query problemi)
@@ -167,13 +186,17 @@ forte_savings/
 3. Mevcut branch durumunu kontrol et: `git status`
 4. Son commit'leri incele: `git log --oneline -5`
 
+### **⚠️ CRITICAL: UNUTMA KURALI - User Uyarısı**
+- **User, her önemli değişiklikten sonra bu CLAUDE_SESSION_NOTES.md dosyasını güncellemeyi unutmamanı özellikle belirtti**
+- **Bu dosyayı güncellemek ZORUNLU - unutma!**
+- **Her commit sonrasında bu dosyada neler yaptığını logla**
+
 ### **Geliştirmeye Devam Ederken**
 1. Her zaman roadmap'e uygun ilerle
-2. Her değişiklikten sonra `docs/development_log.md`'yi güncelle
+2. **🚨 Her önemli değişiklikten sonra bu CLAUDE_SESSION_NOTES.md dosyasını güncelle**
 3. Shadcn/UI dışında UI kütüphanesi kullanma
 4. Güvenlik kontrollerini ihmal etme
-5. **ÖNEMLİ:** Her commit öncesi `CLAUDE_SESSION_NOTES.md` dosyasını güncelle
-6. Her aşama sonunda commit yap
+5. Her aşama sonunda commit yap
 
 ### **Commit Öncesi Zorunlu Kontrol Listesi**
 - [ ] **ÖNEMLİ:** `npm run build` komutu çalıştırılmış ve başarılı mı?
@@ -206,10 +229,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Aşama 3 tamamlandı - Proje Detay Sayfası ve API  
-**Sonraki Adım**: Aşama 4 - Dashboard Stats + Tasarruf Kaydı Yönetimi  
-**Commit ID**: 6838044 (Phase 3 Project Detail)  
-**Not**: Proje detay sistemi tam çalışır durumda. Dynamic routing için static export kapatıldı
+**Son İşlem**: Tasarruf kaydı ekleme özelliği tamamlandı + CRITICAL BUG keşfedildi  
+**Sonraki Adım**: Generated column hatası düzeltmesi (PRIORITY 1)  
+**Commit ID**: 4a749c4 (Savings record creation)  
+**Not**: ⚠️ SQLSTATE[HY000]: General error: 3105 - total_price generated column sorunu var!
 
 ---
 
