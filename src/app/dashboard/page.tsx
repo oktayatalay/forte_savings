@@ -277,11 +277,24 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start" variant="outline">
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => {
+                  const projectsSection = document.querySelector('[data-projects-table]');
+                  if (projectsSection) {
+                    projectsSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
                 <FileText className="mr-2 h-4 w-4" />
                 Proje Listesi
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button 
+                className="w-full justify-start" 
+                variant="outline"
+                onClick={() => router.push('/dashboard/reports')}
+              >
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Raporlar
               </Button>
@@ -351,7 +364,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Projects Table */}
-        <div className="mb-8">
+        <div className="mb-8" data-projects-table>
           <ProjectsTable 
             onProjectUpdated={() => window.location.reload()} 
             onNewProject={() => setShowProjectForm(true)}
