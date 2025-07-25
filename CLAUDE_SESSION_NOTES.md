@@ -142,10 +142,11 @@ forte_savings/
 - ✅ Search SQLSTATE[HY093] hatası → SQL'de :search 5 kez kullanımı, :search1-5 olarak düzeltildi
 - ✅ Invalid Date sorunu → Tarih formatı kontrolü eklendi
 - ✅ Admin permission badge hatası → Admin için özel turuncu badge
+- ✅ Non-admin user search SQLSTATE[HY093] hatası → Parameter binding düzeltildi (:user_id/:user_id2)
+- ✅ CC user role mantık hatası → Database schema değiştirildi, middleware güncellendi
 
 ### **Aktif Sorunlar**
-- 🔧 Non-admin user search parametresi eksikliği → Search yaparken SQLSTATE[HY093] hatası
-- 🔧 CC user role mantık hatası → CC proje bazlı yetki olmalı, user tipi değil
+- Yok! Tüm kritik hatalar çözüldü ✅
 
 ### **Mevcut Sınırlamalar**
 - Ana API list.php'de 500 hatası (complex query problemi)
@@ -202,10 +203,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: CC user role mantık hatası düzeltiliyor - CC proje bazlı yetki olmalı  
-**Sonraki Adım**: Non-admin search hatası çözümü, sonra Aşama 3  
-**Commit ID**: Bekliyor (CC role refactor)  
-**Not**: CC user tipi kaldırıldı, sadece admin/user kaldı. CC project_permissions'da proje bazlı
+**Son İşlem**: Tüm kritik hatalar çözüldü - search ve CC user role sorunları  
+**Sonraki Adım**: Aşama 3 - Proje Detay Sayfası geliştirme  
+**Commit ID**: ac9f1d1 (Search parameter fix)  
+**Not**: CC mantığı düzeltildi. Artık sadece admin/user role var, CC proje bazlı yetki olarak çalışıyor
 
 ---
 

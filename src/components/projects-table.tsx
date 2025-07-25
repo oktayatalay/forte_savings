@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ interface ProjectsTableProps {
 }
 
 export function ProjectsTable({ className }: ProjectsTableProps) {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -322,7 +324,11 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
                       {getPermissionBadge(project.user_permission)}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                      >
                         <Eye className="w-4 h-4 mr-1" />
                         Detay
                       </Button>
