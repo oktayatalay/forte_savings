@@ -1,16 +1,27 @@
-# Allow Authorization header to pass through
+# Allow Authorization header to pass through - Enhanced
 RewriteEngine On
 
-# Method 1: Direct authorization header
-RewriteCond %{HTTP:Authorization} ^(.*)
+# Method 1: Direct authorization header  
+RewriteCond %{HTTP:Authorization} ^(.+)$
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 
 # Method 2: Alternative authorization header names
-RewriteCond %{HTTP:X-Authorization} ^(.*)
+RewriteCond %{HTTP:X-Authorization} ^(.+)$
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 
-# Method 3: Handle Authorization header for FastCGI/FPM
-SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+# Method 3: Handle Authorization header for FastCGI/FPM - Multiple approaches
+SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+SetEnvIf Authorization "(.+)" REDIRECT_HTTP_AUTHORIZATION=$1
+
+# Method 4: Force authorization header through CGI
+CGIPassAuth On
+
+# Method 5: Handle all auth-related headers
+RewriteCond %{HTTP:Authorization} ^Bearer\s(.+)$
+RewriteRule .* - [E=HTTP_AUTHORIZATION:Bearer %1]
+
+# Method 6: Alternative env var setting
+SetEnvIf Authorization "Bearer\s(.+)" HTTP_AUTHORIZATION="Bearer $1"
 
 # CORS headers for API requests
 Header always set Access-Control-Allow-Origin "*"

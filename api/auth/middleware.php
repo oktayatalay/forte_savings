@@ -83,22 +83,48 @@ function requireAuth($required_roles = null) {
     
     // Yöntem 2: $_SERVER array'i (nginx, diğer sunucular)
     if (empty($auth_header)) {
-        $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        // Farklı server değişkenlerini dene
+        $possible_headers = [
+            'HTTP_AUTHORIZATION',
+            'REDIRECT_HTTP_AUTHORIZATION', 
+            'PHP_AUTH_DIGEST',
+            'PHP_AUTH_USER',
+            'Authorization'
+        ];
+        
+        foreach ($possible_headers as $header_name) {
+            if (isset($_SERVER[$header_name]) && !empty($_SERVER[$header_name])) {
+                $auth_header = $_SERVER[$header_name];
+                break;
+            }
+        }
     }
     
-    // Yöntem 3: Alternatif header isimleri
+    // Yöntem 3: PHP input stream'den authorization'ı parse et
     if (empty($auth_header)) {
-        $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if ($headers) {
+                foreach ($headers as $key => $value) {
+                    if (strtolower($key) === 'authorization') {
+                        $auth_header = $value;
+                        break;
+                    }
+                }
+            }
+        }
     }
     
-    // Yöntem 4: PHP input stream'den authorization'ı parse et
+    // Yöntem 4: Manual header parsing
     if (empty($auth_header)) {
-        $headers = getallheaders();
-        if ($headers) {
-            foreach ($headers as $key => $value) {
-                if (strtolower($key) === 'authorization') {
-                    $auth_header = $value;
-                    break;
+        // Input stream'den header'ları parse et
+        if (!empty($_SERVER['CONTENT_TYPE']) || !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            $input = file_get_contents('php://input');
+            if ($input) {
+                // POST data parse et
+                $data = json_decode($input, true);
+                if (isset($data['_headers']['Authorization'])) {
+                    $auth_header = $data['_headers']['Authorization'];
                 }
             }
         }
@@ -112,9 +138,16 @@ function requireAuth($required_roles = null) {
                 'auth_header_found' => !empty($auth_header),
                 'auth_header_preview' => substr($auth_header, 0, 20) . '...',
                 'server_vars' => [
-                    'HTTP_AUTHORIZATION' => isset($_SERVER['HTTP_AUTHORIZATION']),
-                    'REDIRECT_HTTP_AUTHORIZATION' => isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])
-                ]
+                    'HTTP_AUTHORIZATION' => isset($_SERVER['HTTP_AUTHORIZATION']) ? 'exists' : 'missing',
+                    'REDIRECT_HTTP_AUTHORIZATION' => isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) ? 'exists' : 'missing',
+                    'PHP_AUTH_DIGEST' => isset($_SERVER['PHP_AUTH_DIGEST']) ? 'exists' : 'missing',
+                    'Authorization' => isset($_SERVER['Authorization']) ? 'exists' : 'missing'
+                ],
+                'all_server_headers' => array_filter($_SERVER, function($key) {
+                    return strpos($key, 'HTTP_') === 0 || strpos($key, 'AUTH') !== false;
+                }, ARRAY_FILTER_USE_KEY),
+                'apache_headers_function' => function_exists('apache_request_headers'),
+                'getallheaders_function' => function_exists('getallheaders')
             ]
         ]);
         exit;
