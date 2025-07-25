@@ -14,7 +14,7 @@
 
 #### **Aşama 3: Proje Detay Sayfası** - ✅ TAMAMLANDI
 
-#### **Aşama 4: Tasarruf Kaydı Yönetimi** - 🔄 DEVAM EDİYOR
+#### **Aşama 4: Tasarruf Kaydı Yönetimi** - ✅ TAMAMLANDI
 - **Veritabanı Şeması**: Roadmap'e uygun olarak güncellendi
 - **Authentication API Endpoints**:
   - `/api/auth/register.php` - Kullanıcı kaydı (@fortetourism.com zorunlu)
@@ -70,6 +70,18 @@
   - Modal form UI komponenti (Dialog, Select, Textarea)
   - Proje detay sayfasına entegre "Yeni Kayıt Ekle" butonu
 
+- **Tasarruf Kaydı CRUD Tamamlandı**: Create, Read, Update, Delete işlemleri
+- **API Endpoints**:
+  - `/api/savings/update.php` - JWT korumalı düzenleme
+  - `/api/savings/delete.php` - JWT korumalı silme
+- **Özellikler**:
+  - Permission-based erişim (admin/owner/cc + own records only)
+  - Düzenleme: Modal form pre-population ve dual-mode işletim
+  - Silme: Onay dialogu ve soft deletion with backup
+  - Real-time istatistik güncellemeleri tüm işlemler sonrası
+  - Proje detay sayfasında edit/delete butonları (actions column)
+  - Loading states ve UX iyileştirmeleri
+
 #### **Aşama 0.5: Temel Kurulum** - ✅ TAMAMLANDI  
 - Next.js 15, TypeScript, Tailwind CSS, Shadcn/UI kurulumu
 - GitHub Actions deployment sistemi (FTP ile savings.forte.works)
@@ -109,12 +121,13 @@ forte_savings/
 
 ## 🚀 **Sonraki Aşamalar (Öncelik Sırasına Göre)**
 
-### **ŞU ANDA YAPILACAK: Aşama 4 - Tasarruf Kaydı Yönetimi**
+### **ŞU ANDA YAPILACAK: Aşama 5 - Proje Yönetimi**
 
-#### **Öncelik 1: Tasarruf Kaydı CRUD Tamamlama**
-- Kayıt düzenleme/silme işlemleri
-- Proje detay sayfasında düzenleme/silme butonları
-- Edit modal formu
+#### **Öncelik 1: Proje CRUD İşlemleri**
+- Yeni proje ekleme formu ve API
+- Proje düzenleme işlevselliği
+- Proje silme işlevselliği (soft delete)
+- Proje listesinde düzenleme/silme butonları
 
 #### **Öncelik 2: Dashboard Quick Stats Entegrasyonu**
 - API'den gerçek proje sayıları çek
@@ -123,10 +136,11 @@ forte_savings/
 
 ### **Sonraki Aşamalar**
 
-#### **Aşama 5: Proje Yönetimi**
-- Yeni proje oluşturma (tüm detaylarla)
-- Proje düzenleme/silme yetkileri
-- CC kişi atama sistemi
+#### **Aşama 6: Admin Paneli & Gelişmiş Özellikler**
+- Admin paneli geliştir
+- Kullanıcı yönetimi
+- Sistem ayarları
+- İstatistik raporları
 
 #### **Aşama 6: Admin Paneli**
 - Admin dashboard
@@ -224,10 +238,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: CRITICAL generated column hatası çözüldü  
-**Sonraki Adım**: Tasarruf kaydı düzenleme/silme işlemleri  
-**Commit ID**: e1973cd (Generated column fix)  
-**Not**: ✅ total_price field'ı API'den kaldırıldı, MySQL otomatik hesaplıyor artık
+**Son İşlem**: Tasarruf kaydı CRUD işlemleri tamamlandı (Edit/Delete)  
+**Sonraki Adım**: Aşama 5 - Proje CRUD işlemleri (ekleme/düzenleme/silme)  
+**Commit ID**: b03e22e (Complete CRUD functionality)  
+**Not**: ✅ Tasarruf kayıtları için tam CRUD işlevselliği hazır
 
 ---
 
