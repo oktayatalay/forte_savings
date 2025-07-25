@@ -104,6 +104,7 @@ try {
             CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
             -- Kullanıcının bu projedeki rolü
             CASE 
+                WHEN :check_role = 'admin' THEN 'admin'
                 WHEN p.created_by = :check_user_id THEN 'owner'
                 WHEN EXISTS (
                     SELECT 1 FROM project_permissions pp 
@@ -135,12 +136,8 @@ try {
     ";
     
     // Check user parametresi ekle (admin için de gerekli)
-    if ($user_role === 'admin') {
-        $params['check_user_id'] = $user_id;
-    } else {
-        $params['check_user_id'] = $user_id;
-    }
-    
+    $params['check_user_id'] = $user_id;
+    $params['check_role'] = $user_role;
     $params['limit'] = $limit;
     $params['offset'] = $offset;
     
