@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp, Plus, Edit, Trash } from 'lucide-react';
 import { SavingsRecordForm } from '@/components/savings-record-form';
 
 interface ProjectDetail {
@@ -79,6 +79,8 @@ function ProjectDetailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<SavingsRecord | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProjectDetail = async () => {
@@ -161,6 +163,109 @@ function ProjectDetailContent() {
       
       setStatistics(newStats);
     }
+  };
+
+  const handleEdit = (record: SavingsRecord) => {
+    setEditingRecord(record);
+    setShowAddForm(true);
+  };
+
+  const handleSavingsRecordUpdated = (updatedRecord: SavingsRecord) => {
+    // Güncellenen kayıt ile listeyi güncelle
+    setSavingsRecords(prev => 
+      prev.map(record => 
+        record.id === updatedRecord.id ? updatedRecord : record
+      )
+    );
+    
+    // İstatistikleri yeniden hesapla
+    if (statistics) {
+      const totalSavings = savingsRecords.reduce((sum, record) => {
+        if (record.id === updatedRecord.id) {
+          return sum + (updatedRecord.type === 'Savings' ? updatedRecord.total_price : 0);
+        }
+        return sum + (record.type === 'Savings' ? record.total_price : 0);
+      }, 0);
+      
+      const totalCostAvoidance = savingsRecords.reduce((sum, record) => {
+        if (record.id === updatedRecord.id) {
+          return sum + (updatedRecord.type === 'Cost Avoidance' ? updatedRecord.total_price : 0);
+        }
+        return sum + (record.type === 'Cost Avoidance' ? record.total_price : 0);
+      }, 0);
+      
+      setStatistics({
+        ...statistics,
+        total_savings: totalSavings,
+        total_cost_avoidance: totalCostAvoidance,
+        total_amount: totalSavings + totalCostAvoidance
+      });
+    }
+    
+    setEditingRecord(null);
+  };
+
+  const handleDelete = async (recordId: number) => {
+    if (!confirm('Bu tasarruf kaydını silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+
+    setDeletingId(recordId);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch('/api/savings/delete.php', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: recordId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (data.success) {
+        // Silinen kaydı listeden kaldır
+        const deletedRecord = savingsRecords.find(r => r.id === recordId);
+        setSavingsRecords(prev => prev.filter(record => record.id !== recordId));
+        
+        // İstatistikleri güncelle
+        if (statistics && deletedRecord) {
+          const newStats = { ...statistics };
+          newStats.total_savings_records -= 1;
+          
+          if (deletedRecord.type === 'Savings') {
+            newStats.total_savings -= deletedRecord.total_price;
+          } else {
+            newStats.total_cost_avoidance -= deletedRecord.total_price;
+          }
+          newStats.total_amount -= deletedRecord.total_price;
+          
+          setStatistics(newStats);
+        }
+      } else {
+        throw new Error(data.error || 'Kayıt silinirken hata oluştu');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert(err instanceof Error ? err.message : 'Kayıt silinirken hata oluştu');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleFormClose = () => {
+    setShowAddForm(false);
+    setEditingRecord(null);
   };
 
   const formatCurrency = (amount: number, currency: string = 'TRY') => {
@@ -443,6 +548,7 @@ function ProjectDetailContent() {
                   <TableHead className="text-right">Adet</TableHead>
                   <TableHead className="text-right">Toplam</TableHead>
                   <TableHead>Oluşturan</TableHead>
+                  <TableHead className="text-center">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -462,6 +568,31 @@ function ProjectDetailContent() {
                       {formatCurrency(record.total_price, record.currency)}
                     </TableCell>
                     <TableCell>{record.created_by_name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        {(userPermission === 'admin' || userPermission === 'owner' || userPermission === 'cc') && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(record)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(record.id)}
+                              disabled={deletingId === record.id}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -478,9 +609,10 @@ function ProjectDetailContent() {
       {project && (
         <SavingsRecordForm
           open={showAddForm}
-          onOpenChange={setShowAddForm}
+          onOpenChange={handleFormClose}
           projectId={project.id}
-          onSuccess={handleSavingsRecordAdded}
+          onSuccess={editingRecord ? handleSavingsRecordUpdated : handleSavingsRecordAdded}
+          editRecord={editingRecord}
         />
       )}
     </div>

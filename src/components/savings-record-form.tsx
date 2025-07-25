@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calculator, Plus } from 'lucide-react';
 
+interface SavingsRecord {
+  id: number;
+  date: string;
+  type: 'Cost Avoidance' | 'Savings';
+  explanation_category: string;
+  explanation_custom: string;
+  category: string;
+  price: number;
+  unit: number;
+  currency: string;
+  total_price: number;
+  created_by_name: string;
+  created_at: string;
+}
+
 interface SavingsRecordFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: number;
   onSuccess: (record: any) => void;
+  editRecord?: SavingsRecord | null;
 }
 
 interface FormData {
@@ -51,7 +67,7 @@ const EXPLANATION_OPTIONS = [
   'Other'
 ];
 
-export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess }: SavingsRecordFormProps) {
+export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess, editRecord }: SavingsRecordFormProps) {
   const [formData, setFormData] = useState<FormData>({
     date: new Date().toISOString().split('T')[0],
     type: '',
@@ -65,6 +81,35 @@ export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess }: 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Düzenleme kaydı değiştiğinde form'u initialize et
+  useEffect(() => {
+    if (editRecord) {
+      setFormData({
+        date: editRecord.date,
+        type: editRecord.type,
+        explanation_category: editRecord.explanation_category,
+        explanation_custom: editRecord.explanation_custom,
+        category: editRecord.category,
+        price: editRecord.price.toString(),
+        unit: editRecord.unit.toString(),
+        currency: editRecord.currency as 'TRY' | 'USD' | 'EUR' | 'GBP'
+      });
+    } else {
+      // Yeni kayıt için form'u sıfırla
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        type: '',
+        explanation_category: '',
+        explanation_custom: '',
+        category: '',
+        price: '',
+        unit: '1',
+        currency: 'TRY'
+      });
+    }
+    setError(null);
+  }, [editRecord]);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
@@ -131,15 +176,23 @@ export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess }: 
         throw new Error('Authentication token not found');
       }
 
-      const submitData = {
+      const submitData: any = {
         project_id: projectId,
         ...formData,
         price: parseFloat(formData.price),
         unit: parseInt(formData.unit)
       };
 
-      const response = await fetch('/api/savings/create.php', {
-        method: 'POST',
+      // Düzenleme modunda ise ID'yi ekle
+      if (editRecord) {
+        submitData.id = editRecord.id;
+      }
+
+      const apiUrl = editRecord ? '/api/savings/update.php' : '/api/savings/create.php';
+      const method = editRecord ? 'PUT' : 'POST';
+
+      const response = await fetch(apiUrl, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -186,7 +239,7 @@ export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess }: 
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Plus className="w-5 h-5 mr-2" />
-            Yeni Tasarruf Kaydı Ekle
+            {editRecord ? 'Tasarruf Kaydını Düzenle' : 'Yeni Tasarruf Kaydı Ekle'}
           </DialogTitle>
         </DialogHeader>
 
@@ -333,7 +386,7 @@ export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess }: 
               İptal
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Kaydediliyor...' : 'Kaydet'}
+              {loading ? (editRecord ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editRecord ? 'Güncelle' : 'Kaydet')}
             </Button>
           </DialogFooter>
         </form>

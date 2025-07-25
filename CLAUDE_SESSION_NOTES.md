@@ -111,16 +111,12 @@ forte_savings/
 
 ### **ŞU ANDA YAPILACAK: Aşama 4 - Tasarruf Kaydı Yönetimi**
 
-#### **Öncelik 1: CRITICAL BUG FIX - Generated Column Hatası**
-- 🚨 API'deki total_price field'ını kaldır (generated column çakışması)
-- Database schema kontrolü yap
-- Test et ve düzelt
-
-#### **Öncelik 2: Tasarruf Kaydı CRUD Tamamlama**
+#### **Öncelik 1: Tasarruf Kaydı CRUD Tamamlama**
 - Kayıt düzenleme/silme işlemleri
-- Dashboard Quick Stats entegrasyonu
+- Proje detay sayfasında düzenleme/silme butonları
+- Edit modal formu
 
-#### **Öncelik 3: Dashboard Quick Stats Entegrasyonu**
+#### **Öncelik 2: Dashboard Quick Stats Entegrasyonu**
 - API'den gerçek proje sayıları çek
 - Toplam tasarruf miktarı hesapla
 - Son aktiviteler listesi
@@ -163,11 +159,10 @@ forte_savings/
 - ✅ Admin permission badge hatası → Admin için özel turuncu badge
 - ✅ Non-admin user search SQLSTATE[HY093] hatası → Parameter binding düzeltildi (:user_id/:user_id2)
 - ✅ CC user role mantık hatası → Database schema değiştirildi, middleware güncellendi
+- ✅ CRITICAL: Generated column hatası → API'den total_price field'ı kaldırıldı, MySQL otomatik hesaplıyor
 
 ### **Aktif Sorunlar**
-- 🚨 **CRITICAL**: SQLSTATE[HY000]: General error: 3105 The value specified for generated column 'total_price' in table 'savings_records' is not allowed
-  - Veritabanında total_price GENERATED COLUMN olarak tanımlanmış ama API'de manuel değer vermeye çalışıyoruz
-  - Çözüm: API'den total_price field'ını kaldırıp sadece price ve unit göndermek gerekiyor
+- Yok! Tüm kritik hatalar çözüldü ✅
 
 ### **Mevcut Sınırlamalar**
 - Ana API list.php'de 500 hatası (complex query problemi)
@@ -229,10 +224,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Tasarruf kaydı ekleme özelliği tamamlandı + CRITICAL BUG keşfedildi  
-**Sonraki Adım**: Generated column hatası düzeltmesi (PRIORITY 1)  
-**Commit ID**: 4a749c4 (Savings record creation)  
-**Not**: ⚠️ SQLSTATE[HY000]: General error: 3105 - total_price generated column sorunu var!
+**Son İşlem**: CRITICAL generated column hatası çözüldü  
+**Sonraki Adım**: Tasarruf kaydı düzenleme/silme işlemleri  
+**Commit ID**: e1973cd (Generated column fix)  
+**Not**: ✅ total_price field'ı API'den kaldırıldı, MySQL otomatik hesaplıyor artık
 
 ---
 
