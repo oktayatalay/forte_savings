@@ -54,10 +54,9 @@ try {
                 WHERE pp.project_id = p.id AND pp.user_id = :user_id
             )
         )";
+        // Sadece non-admin için user_id parametresi ekle
+        $params['user_id'] = $user_id;
     }
-    
-    // Her zaman user_id parametresi ekle (admin için de gerekebilir)
-    $params['user_id'] = $user_id;
     
     // Arama filtresi ekle
     if (!empty($search)) {
