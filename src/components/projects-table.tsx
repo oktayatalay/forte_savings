@@ -327,7 +327,7 @@ export function ProjectsTable({ className }: ProjectsTableProps) {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                        onClick={() => router.push(`/dashboard/project-detail?id=${project.id}`)}
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         Detay

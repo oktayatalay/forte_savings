@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // output: 'export', // Dynamic routes için kapatıldı
+  output: 'export', // GitHub Actions deployment için geçici açıldı
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   images: {

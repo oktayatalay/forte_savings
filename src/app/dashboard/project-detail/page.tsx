@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,9 +65,11 @@ interface Statistics {
   last_record_date: string | null;
 }
 
-export default function ProjectDetailPage() {
-  const params = useParams();
+function ProjectDetailContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get('id');
+  
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [savingsRecords, setSavingsRecords] = useState<SavingsRecord[]>([]);
   const [projectTeam, setProjectTeam] = useState<ProjectTeam[]>([]);
@@ -79,13 +81,18 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProjectDetail = async () => {
       try {
+        if (!projectId) {
+          setError('Proje ID\'si gerekli.');
+          return;
+        }
+
         const token = localStorage.getItem('auth_token');
         if (!token) {
           router.push('/auth/login');
           return;
         }
 
-        const response = await fetch(`/api/projects/detail.php?id=${params.id}`, {
+        const response = await fetch(`/api/projects/detail.php?id=${projectId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -127,10 +134,8 @@ export default function ProjectDetailPage() {
       }
     };
 
-    if (params.id) {
-      fetchProjectDetail();
-    }
-  }, [params.id, router]);
+    fetchProjectDetail();
+  }, [projectId, router]);
 
   const formatCurrency = (amount: number, currency: string = 'TRY') => {
     return new Intl.NumberFormat('tr-TR', {
@@ -430,5 +435,19 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ProjectDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    }>
+      <ProjectDetailContent />
+    </Suspense>
   );
 }
