@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ProjectsTable } from '@/components/projects-table';
 import { Loader2, LogOut, Plus, FileText, Users, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -187,6 +188,11 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Projects Table */}
+        <div className="mb-8">
+          <ProjectsTable />
         </div>
 
         {/* Admin Panel Link */}

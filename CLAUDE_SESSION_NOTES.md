@@ -9,6 +9,8 @@
 ### ✅ **Tamamlanan Aşamalar**
 
 #### **Aşama 1: Kimlik Doğrulama & Erişim Kontrolü** - ✅ TAMAMLANDI
+
+#### **Aşama 2: Kullanıcı Ana Paneli - Proje Listesi** - ✅ TAMAMLANDI
 - **Veritabanı Şeması**: Roadmap'e uygun olarak güncellendi
 - **Authentication API Endpoints**:
   - `/api/auth/register.php` - Kullanıcı kaydı (@fortetourism.com zorunlu)
@@ -25,6 +27,16 @@
 - **Dashboard**: Temel kullanıcı paneli oluşturuldu
 - **Güvenlik**: Rol bazlı erişim (admin, user, cc), audit logging
 - **Test Durumu**: ✅ Çalışıyor
+
+- **Proje Listesi API**: `/api/projects/list.php` - JWT korumalı, sayfalama ve filtreleme destekli
+- **Proje Tablosu Frontend**: Dashboard'a entegre edilen responsive tablo komponenti
+- **Özellikler**:
+  - Kullanıcının sahip olduğu + CC olduğu projeleri listeler
+  - FRN, müşteri, proje adı ile arama yapılabilir
+  - Tüm sütunlar sıralanabilir (FRN, müşteri, sorumlu, tarih, tasarruf vb.)
+  - Sayfalama desteği (10 kayıt/sayfa)
+  - Kullanıcı yetkisi badge'i (Sahip/CC/Görüntüleyici)
+  - Responsive tasarım
 
 #### **Aşama 0.5: Temel Kurulum** - ✅ TAMAMLANDI  
 - Next.js 15, TypeScript, Tailwind CSS, Shadcn/UI kurulumu
@@ -65,46 +77,45 @@ forte_savings/
 
 ## 🚀 **Sonraki Aşamalar (Öncelik Sırasına Göre)**
 
-### **ŞU ANDA YAPILACAK: Aşama 2 - Kullanıcı Ana Paneli**
+### **ŞU ANDA YAPILACAK: Aşama 3 - Proje Detay Sayfası**
 
-#### **Öncelik 1: Proje Listesi Sistemi**
-1. **Proje Listesi API'si** (`/api/projects/list.php`)
-   - Kullanıcının sahip olduğu + CC olduğu projeleri getir
-   - Sütunlar: FRN, Planner, Date, Total Savings
-   - Sayfalama ve filtreleme desteği
-   - JWT authentication ile korumalı
+#### **Öncelik 1: Proje Detay Sistemi**
+1. **Proje Detay API'si** (`/api/projects/detail.php`)
+   - Tek projenin tüm bilgilerini getir
+   - Proje erişim kontrolü (sahip/CC check)
+   - Tasarruf kayıtları alt tablosu
 
-2. **Proje Listesi Frontend**
-   - Dashboard'a proje tablosu ekleme
-   - Responsive tasarım
-   - Arama/filtreleme özellikleri
-   - Proje detayına yönlendirme linkleri
+2. **Proje Detay Frontend**
+   - `/dashboard/projects/[id]` route oluştur
+   - Proje bilgileri görüntüleme
+   - Tasarruf kayıtları tablosu
+   - Düzenleme yetkisi kontrolü
 
-#### **Öncelik 2: Dashboard İyileştirmeleri**
-- Quick stats'larda gerçek veri gösterimi
-- Son aktiviteler bölümü
-- Hızlı işlemler butonlarının çalışır hale getirilmesi
+#### **Öncelik 2: Dashboard Quick Stats Entegrasyonu**
+- API'den gerçek proje sayıları çek
+- Toplam tasarruf miktarı hesapla
+- Son aktiviteler listesi
 
 ### **Sonraki Aşamalar**
 
-#### **Aşama 3: Proje Detay Sayfası**
-- Proje bilgileri görüntüleme (tüm alanlar roadmap'teki gibi)
-- Alt tablo: Cost Avoidance & Savings kayıtları
-- Otomatik hesaplama (Price × Unit = Total Price)
+#### **Aşama 4: Tasarruf Kaydı Yönetimi**
 - Yeni tasarruf kaydı ekleme formu
+- Kayıt düzenleme/silme işlemleri
+- Otomatik hesaplama (Price × Unit = Total Price)
+- Kategori seçimleri
 
-#### **Aşama 4: Proje Yönetimi**
+#### **Aşama 5: Proje Yönetimi**
 - Yeni proje oluşturma (tüm detaylarla)
 - Proje düzenleme/silme yetkileri
 - CC kişi atama sistemi
 
-#### **Aşama 5: Admin Paneli**
+#### **Aşama 6: Admin Paneli**
 - Admin dashboard
 - Kullanıcı yönetimi
 - Kategori yönetimi
 - Raporlama ve Excel export
 
-#### **Aşama 6: Test ve Güvenlik**
+#### **Aşama 7: Test ve Güvenlik**
 - Güvenlik testleri
 - Performance optimizasyonu
 
@@ -120,9 +131,14 @@ forte_savings/
 - ✅ Forgot password eksikliği → Tamamlandı
 - ✅ Email sistemi entegrasyonu → SMTP ile mail gönderimi eklendi
 - ✅ SMTP bağlantı hatası → PHPMailer ile çözüldü (forte_crm yapısı kullanıldı)
+- ✅ Şifre sıfırlama token hatası → Çözüldü (kullanıcı bildirimi)
+
+### **Aktif Sorunlar**
+- Yok (tüm temel sistemler çalışıyor)
 
 ### **Mevcut Sınırlamalar**
-- Proje verileri henüz yok (boş dashboard)
+- Henüz proje verisi yok (test için proje eklenebilir)
+- Proje detay sayfası geliştirilmedi
 - Admin paneli henüz geliştirilmedi
 
 ---
@@ -174,10 +190,10 @@ Eğer build başarısız olursa, hataları düzelt ve tekrar test et. Sadece bui
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: PHPMailer entegrasyonu tamamlandı (forte_crm yapısı)  
-**Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
-**Commit ID**: `f9a887c` - PHPMailer entegrasyonu  
-**Not**: Email sistemi artık tam çalışır durumda
+**Son İşlem**: Aşama 2 tamamlandı - Proje listesi sistemi eklendi  
+**Sonraki Adım**: Aşama 3 - Proje detay sayfası geliştir  
+**Commit ID**: Bekliyor (şu anki session'da tamamlandı)  
+**Not**: Proje listesi API'si ve frontend tablosu hazır, build başarılı
 
 ---
 

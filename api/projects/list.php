@@ -1,0 +1,204 @@
+<?php
+require_once '../config/cors.php';
+require_once '../config/database.php';
+require_once '../auth/middleware.php';
+
+header('Content-Type: application/json');
+
+// POST ve GET destekle (GET için sayfalama parametreleri URL'de)
+$method = $_SERVER['REQUEST_METHOD'];
+
+try {
+    // Authentication
+    $auth_data = requireUserOrAbove();
+    $user_id = $auth_data['user_id'];
+    $user_role = $auth_data['role'];
+    
+    // Input parametreleri al
+    $input = [];
+    if ($method === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    } else {
+        $input = $_GET;
+    }
+    
+    // Sayfalama parametreleri
+    $page = (int)($input['page'] ?? 1);
+    $limit = (int)($input['limit'] ?? 10);
+    $offset = ($page - 1) * $limit;
+    
+    // Filtreleme parametreleri
+    $search = $input['search'] ?? '';
+    $sort_by = $input['sort_by'] ?? 'updated_at';
+    $sort_order = strtoupper($input['sort_order'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+    
+    $pdo = getDBConnection();
+    
+    // Base query - Kullanıcının erişebildiği projeler
+    $base_where = "";
+    $params = [];
+    
+    if ($user_role === 'admin') {
+        // Admin tüm projeleri görebilir
+        $base_where = "WHERE p.is_active = TRUE";
+    } else {
+        // Normal kullanıcı sadece kendi oluşturduğu veya CC olduğu projeleri görebilir
+        $base_where = "WHERE p.is_active = TRUE AND (
+            p.created_by = :user_id OR 
+            EXISTS (
+                SELECT 1 FROM project_permissions pp 
+                WHERE pp.project_id = p.id AND pp.user_id = :user_id
+            )
+        )";
+        $params['user_id'] = $user_id;
+    }
+    
+    // Arama filtresi ekle
+    if (!empty($search)) {
+        $base_where .= " AND (
+            p.frn LIKE :search OR 
+            p.customer LIKE :search OR 
+            p.project_name LIKE :search OR
+            p.forte_responsible LIKE :search OR
+            p.project_director LIKE :search
+        )";
+        $params['search'] = '%' . $search . '%';
+    }
+    
+    // Geçerli sıralama alanları
+    $valid_sort_fields = [
+        'frn', 'customer', 'project_name', 'forte_responsible', 
+        'project_director', 'group_in', 'group_out', 'total_savings', 
+        'created_at', 'updated_at'
+    ];
+    
+    if (!in_array($sort_by, $valid_sort_fields)) {
+        $sort_by = 'updated_at';
+    }
+    
+    // Toplam kayıt sayısını al
+    $count_sql = "SELECT COUNT(*) FROM projects p " . $base_where;
+    $count_stmt = $pdo->prepare($count_sql);
+    $count_stmt->execute($params);
+    $total_records = $count_stmt->fetchColumn();
+    
+    // Ana sorgu
+    $sql = "
+        SELECT 
+            p.id,
+            p.frn,
+            p.customer,
+            p.project_name,
+            p.forte_responsible,
+            p.project_director,
+            p.forte_cc_person,
+            p.group_in,
+            p.group_out,
+            p.total_savings,
+            p.po_amount,
+            p.location,
+            p.event_type,
+            p.project_type,
+            p.created_at,
+            p.updated_at,
+            CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
+            -- Kullanıcının bu projedeki rolü
+            CASE 
+                WHEN p.created_by = :check_user_id THEN 'owner'
+                WHEN EXISTS (
+                    SELECT 1 FROM project_permissions pp 
+                    WHERE pp.project_id = p.id 
+                    AND pp.user_id = :check_user_id 
+                    AND pp.permission_type = 'cc'
+                ) THEN 'cc'
+                ELSE 'none'
+            END as user_permission,
+            -- Son tasarruf kaydı tarihi
+            (
+                SELECT sr.date 
+                FROM savings_records sr 
+                WHERE sr.project_id = p.id 
+                ORDER BY sr.date DESC 
+                LIMIT 1
+            ) as last_savings_date,
+            -- Toplam kayıt sayısı
+            (
+                SELECT COUNT(*) 
+                FROM savings_records sr 
+                WHERE sr.project_id = p.id
+            ) as savings_records_count
+        FROM projects p
+        LEFT JOIN users u ON p.created_by = u.id
+        {$base_where}
+        ORDER BY p.{$sort_by} {$sort_order}
+        LIMIT :limit OFFSET :offset
+    ";
+    
+    // Check user parametresi ekle (admin için de gerekli)
+    if ($user_role === 'admin') {
+        $params['check_user_id'] = $user_id;
+    } else {
+        $params['check_user_id'] = $user_id;
+    }
+    
+    $params['limit'] = $limit;
+    $params['offset'] = $offset;
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Tarihleri formatla ve sayıları düzelt
+    foreach ($projects as &$project) {
+        $project['group_in'] = date('Y-m-d', strtotime($project['group_in']));
+        $project['group_out'] = date('Y-m-d', strtotime($project['group_out']));
+        $project['created_at'] = date('Y-m-d H:i:s', strtotime($project['created_at']));
+        $project['updated_at'] = date('Y-m-d H:i:s', strtotime($project['updated_at']));
+        $project['total_savings'] = floatval($project['total_savings']);
+        $project['po_amount'] = floatval($project['po_amount']);
+        $project['savings_records_count'] = intval($project['savings_records_count']);
+        
+        if ($project['last_savings_date']) {
+            $project['last_savings_date'] = date('Y-m-d', strtotime($project['last_savings_date']));
+        }
+    }
+    
+    // Sayfalama bilgileri hesapla
+    $total_pages = ceil($total_records / $limit);
+    
+    $response = [
+        'success' => true,
+        'data' => [
+            'projects' => $projects,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $total_pages,
+                'total_records' => (int)$total_records,
+                'per_page' => $limit,
+                'has_next_page' => $page < $total_pages,
+                'has_prev_page' => $page > 1
+            ],
+            'filters' => [
+                'search' => $search,
+                'sort_by' => $sort_by,
+                'sort_order' => $sort_order
+            ]
+        ],
+        'user' => [
+            'id' => $user_id,
+            'role' => $user_role
+        ]
+    ];
+    
+    echo json_encode($response, JSON_PRETTY_PRINT);
+
+} catch (Exception $e) {
+    error_log("Projects list error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Projeler listesi alınırken hata oluştu',
+        'debug' => $e->getMessage()
+    ]);
+}
+?>
