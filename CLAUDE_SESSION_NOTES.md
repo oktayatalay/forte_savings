@@ -165,10 +165,10 @@ forte_savings/
 ## 📝 **Son Güncelleme**
 
 **Tarih**: 25 Temmuz 2025  
-**Son İşlem**: Email sistemi entegrasyonu tamamlandı  
+**Son İşlem**: Next.js build hatası düzeltildi (useSearchParams Suspense)  
 **Sonraki Adım**: Proje listesi API'si geliştir (Aşama 2)  
-**Commit ID**: Güncellenecek - Email entegrasyonu  
-**Not**: Authentication sistemi tamamen tamamlandı, artık proje yönetimine geçilebilir
+**Commit ID**: Güncellenecek - Build fix  
+**Not**: Authentication sistemi tamamen tamamlandı, email entegrasyonu aktif
 
 ---
 
