@@ -26,7 +26,7 @@ export const handlers = [
 
   // Project create endpoint
   http.post('/api/projects/create.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any> as Record<string, any>
     return HttpResponse.json(mockApiResponses.success({
       ...mockProject,
       ...body,
@@ -36,7 +36,7 @@ export const handlers = [
 
   // Project update endpoint
   http.put('/api/projects/update.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     return HttpResponse.json(mockApiResponses.success({
       ...mockProject,
       ...body,
@@ -69,7 +69,7 @@ export const handlers = [
 
   // Savings create endpoint
   http.post('/api/savings/create.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     return HttpResponse.json(mockApiResponses.success({
       id: Math.floor(Math.random() * 1000),
       ...body,
@@ -79,7 +79,7 @@ export const handlers = [
 
   // Savings update endpoint
   http.put('/api/savings/update.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     return HttpResponse.json(mockApiResponses.success(body))
   }),
 
@@ -97,7 +97,7 @@ export const handlers = [
 
   // Auth endpoints
   http.post('/api/auth/login.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     const { email, password } = body as { email: string; password: string }
     
     if (email === 'test@example.com' && password === 'password') {
@@ -118,7 +118,7 @@ export const handlers = [
   }),
 
   http.post('/api/auth/register.php', async ({ request }) => {
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     return HttpResponse.json(mockApiResponses.success({
       user: {
         id: Math.floor(Math.random() * 1000),

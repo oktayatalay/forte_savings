@@ -1,3 +1,4 @@
+import React from 'react';
 import { onCLS, onINP, onFCP, onLCP, onTTFB, Metric } from 'web-vitals';
 
 // Performance thresholds based on Google's Core Web Vitals
@@ -92,14 +93,11 @@ class PerformanceMonitor {
             this.trackEvent({
               type: 'page_load',
               name: 'navigation_timing',
-              value: navEntry.loadEventEnd - navEntry.navigationStart,
-              timestamp: Date.now(),
-              url: window.location.href,
-              userAgent: navigator.userAgent,
+              value: navEntry.loadEventEnd - navEntry.startTime,
               metadata: {
-                domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.navigationStart,
-                domInteractive: navEntry.domInteractive - navEntry.navigationStart,
-                loadComplete: navEntry.loadEventEnd - navEntry.navigationStart,
+                domContentLoaded: navEntry.domContentLoadedEventEnd - navEntry.startTime,
+                domInteractive: navEntry.domInteractive - navEntry.startTime,
+                loadComplete: navEntry.loadEventEnd - navEntry.startTime,
               },
             });
           }
@@ -115,9 +113,6 @@ class PerformanceMonitor {
               type: 'api_call',
               name: 'resource_load',
               value: entry.duration,
-              timestamp: Date.now(),
-              url: window.location.href,
-              userAgent: navigator.userAgent,
               metadata: {
                 resourceName: entry.name,
                 resourceType: (entry as PerformanceResourceTiming).initiatorType,
@@ -331,7 +326,7 @@ export const withPerformanceTracking = <P extends object>(
       };
     }, []);
 
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 
   WrappedComponent.displayName = `withPerformanceTracking(${Component.displayName || Component.name})`;

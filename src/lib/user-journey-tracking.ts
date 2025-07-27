@@ -1,3 +1,4 @@
+import React from 'react';
 import { performanceMonitor } from './performance-monitoring';
 
 // Define key user journeys in the application
@@ -398,7 +399,7 @@ export const withJourneyTracking = <P extends object>(
       };
     }, []);
 
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 
   WrappedComponent.displayName = `withJourneyTracking(${Component.displayName || Component.name})`;
