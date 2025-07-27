@@ -39,3 +39,9 @@ next-env.d.ts
 # logs
 /api/logs/
 *.log
+
+# Security documentation (contains sensitive information)
+SECURITY*.md
+security*.php
+security*.sql
+database/update_admin_password.sql
