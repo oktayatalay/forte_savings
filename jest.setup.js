@@ -5,11 +5,11 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
-// Mock matchMedia
+// Mock matchMedia with better implementation
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
-    matches: false,
+    matches: query === '(prefers-color-scheme: dark)' ? false : query.includes('max-width'),
     media: query,
     onchange: null,
     addListener: jest.fn(), // deprecated
@@ -19,6 +19,41 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: jest.fn(),
   })),
 })
+
+// Mock BroadcastChannel
+global.BroadcastChannel = class BroadcastChannel {
+  constructor(name) {
+    this.name = name
+  }
+  
+  postMessage(message) {
+    // Mock implementation
+  }
+  
+  addEventListener() {
+    // Mock implementation
+  }
+  
+  removeEventListener() {
+    // Mock implementation
+  }
+  
+  close() {
+    // Mock implementation
+  }
+}
+
+// Mock next-themes
+jest.mock('next-themes', () => ({
+  ThemeProvider: ({ children }) => children,
+  useTheme: () => ({
+    theme: 'light',
+    setTheme: jest.fn(),
+    resolvedTheme: 'light',
+    themes: ['light', 'dark'],
+    systemTheme: 'light',
+  }),
+}))
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -62,8 +97,41 @@ Object.defineProperty(window, 'sessionStorage', {
   writable: true,
 })
 
-// Mock fetch
+// Mock fetch and Response
 global.fetch = jest.fn()
+global.Response = class Response {
+  constructor(body, init) {
+    this.body = body
+    this.status = init?.status || 200
+    this.statusText = init?.statusText || 'OK'
+    this.headers = new Map(Object.entries(init?.headers || {}))
+  }
+  
+  json() {
+    return Promise.resolve(JSON.parse(this.body || '{}'))
+  }
+  
+  text() {
+    return Promise.resolve(this.body || '')
+  }
+  
+  ok() {
+    return this.status >= 200 && this.status < 300
+  }
+}
+
+global.Request = class Request {
+  constructor(input, init) {
+    this.url = input
+    this.method = init?.method || 'GET'
+    this.headers = new Map(Object.entries(init?.headers || {}))
+    this.body = init?.body
+  }
+  
+  json() {
+    return Promise.resolve(JSON.parse(this.body || '{}'))
+  }
+}
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
