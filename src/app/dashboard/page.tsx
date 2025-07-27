@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { ProjectsTable } from '@/components/projects-table';
 import { ProjectForm } from '@/components/project-form';
-import { Loader2, LogOut, Plus, FileText, Users, TrendingUp, Building } from 'lucide-react';
+import { EnhancedStatsCard, StatsGrid } from '@/components/enhanced-stats-card';
+import { SavingsTrendChart, SavingsComparisonChart, CurrencyDistributionChart, InteractiveChartWrapper, generateSampleChartData } from '@/components/chart-components';
+import { EnhancedNavigation, Breadcrumbs, useBreadcrumbs } from '@/components/enhanced-navigation';
+import { EnhancedSkeleton } from '@/components/loading-states';
+import { GlobalSearch } from '@/components/global-search';
+import { Loader2, LogOut, Plus, FileText, Users, TrendingUp, Building, DollarSign, Clock, BarChart3, PieChart, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -136,10 +140,30 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin mb-4" />
-          <p className="text-muted-foreground">Yükleniyor...</p>
+      <div className="min-h-screen bg-background">
+        <div className="space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <EnhancedSkeleton className="h-8 w-48" />
+              <EnhancedSkeleton className="h-4 w-32" />
+            </div>
+            <EnhancedSkeleton className="h-10 w-24" />
+          </div>
+          <StatsGrid>
+            {[1, 2, 3, 4].map((i) => (
+              <EnhancedStatsCard
+                key={i}
+                title=""
+                value=""
+                icon={FileText}
+                loading={true}
+              />
+            ))}
+          </StatsGrid>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <EnhancedSkeleton className="h-96" />
+            <EnhancedSkeleton className="h-96" />
+          </div>
         </div>
       </div>
     );
@@ -155,130 +179,175 @@ export default function DashboardPage() {
     );
   }
 
+  const breadcrumbs = useBreadcrumbs();
+
+  // Prepare chart data
+  const chartData = generateSampleChartData(12);
+  const currencyData = dashboardStats?.savings.by_currency.map((item, index) => ({
+    currency: item.currency,
+    total: item.total,
+    color: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'][index % 4]
+  })) || [];
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Forte Savings</h1>
-            <p className="text-sm text-muted-foreground">Tasarruf Yönetim Sistemi</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-medium">{user?.first_name} {user?.last_name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
-            </div>
-            <ThemeToggle />
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Çıkış
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Enhanced Navigation */}
+      <EnhancedNavigation 
+        user={user!} 
+        onLogout={handleLogout}
+        notifications={3}
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={breadcrumbs} />
+        
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">
-            Hoş geldiniz, {user?.first_name}!
-          </h2>
-          <p className="text-muted-foreground">
-            Projelerinizi yönetin ve tasarruflarınızı takip edin.
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">
+              Hoş geldiniz, {user?.first_name}!
+            </h2>
+            <p className="text-muted-foreground">
+              Projelerinizi yönetin ve tasarruflarınızı takip edin.
+            </p>
+          </div>
+          <div className="hidden lg:block">
+            <GlobalSearch placeholder="Projeler, müşteriler, raporlar ara..." />
+          </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Projeler</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <div className="text-2xl font-bold animate-pulse">...</div>
-              ) : (
-                <div className="text-2xl font-bold">{dashboardStats?.projects.total || 0}</div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {statsLoading ? 'Yükleniyor...' : 
-                 dashboardStats?.projects.total === 0 ? 'Henüz proje bulunmuyor' :
-                 `${dashboardStats?.projects.active || 0} aktif proje`}
-              </p>
-            </CardContent>
-          </Card>
+        {/* Enhanced Stats Cards */}
+        <StatsGrid columns={4} className="mb-8">
+          <EnhancedStatsCard
+            title="Toplam Projeler"
+            value={dashboardStats?.projects.total || 0}
+            icon={FileText}
+            iconColor="text-blue-600"
+            description={statsLoading ? 'Yükleniyor...' : 
+                        dashboardStats?.projects.total === 0 ? 'Henüz proje bulunmuyor' :
+                        `${dashboardStats?.projects.active || 0} aktif proje`}
+            loading={statsLoading}
+            variant="gradient"
+            change={{
+              value: 12,
+              type: 'increase',
+              period: 'bu ay'
+            }}
+            interactive={true}
+            onClick={() => {
+              const projectsSection = document.querySelector('[data-projects-table]');
+              if (projectsSection) {
+                projectsSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          />
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bu Ay</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <div className="text-2xl font-bold animate-pulse">...</div>
-              ) : (
-                <div className="text-2xl font-bold">{dashboardStats?.projects.this_month || 0}</div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {statsLoading ? 'Yükleniyor...' : 'yeni proje'}
-              </p>
-            </CardContent>
-          </Card>
+          <EnhancedStatsCard
+            title="Bu Ay"
+            value={dashboardStats?.projects.this_month || 0}
+            icon={Calendar}
+            iconColor="text-green-600"
+            description={statsLoading ? 'Yükleniyor...' : 'yeni proje'}
+            loading={statsLoading}
+            variant="modern"
+            progress={{
+              value: dashboardStats?.projects.this_month || 0,
+              max: 10,
+              label: 'Aylık hedef'
+            }}
+          />
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Tasarruf</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {statsLoading ? (
-                <div className="text-2xl font-bold animate-pulse">...</div>
-              ) : dashboardStats?.savings.by_currency.length === 0 ? (
-                <div className="text-2xl font-bold">₺0</div>
-              ) : (
-                <div className="space-y-1">
-                  {dashboardStats?.savings.by_currency
-                    .sort((a, b) => b.total - a.total) // En yüksekten düşüğe
-                    .map((currencyData) => (
-                    <div key={currencyData.currency} className="text-sm font-bold">
-                      {new Intl.NumberFormat('tr-TR', {
-                        style: 'currency',
-                        currency: currencyData.currency,
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      }).format(currencyData.total)}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {statsLoading ? 'Yükleniyor...' : 
-                 `${dashboardStats?.savings.total_records || 0} kayıt`}
-              </p>
-            </CardContent>
-          </Card>
+          <EnhancedStatsCard
+            title="Toplam Tasarruf"
+            value={statsLoading ? 0 : 
+                   dashboardStats?.savings.by_currency.length === 0 ? '₺0' :
+                   new Intl.NumberFormat('tr-TR', {
+                     style: 'currency',
+                     currency: dashboardStats?.savings.by_currency[0]?.currency || 'TRY',
+                     minimumFractionDigits: 0,
+                     maximumFractionDigits: 0
+                   }).format(dashboardStats?.savings.primary_currency_total || 0)}
+            icon={DollarSign}
+            iconColor="text-emerald-600"
+            description={statsLoading ? 'Yükleniyor...' : 
+                        `${dashboardStats?.savings.total_records || 0} kayıt`}
+            loading={statsLoading}
+            variant="gradient"
+            change={{
+              value: 24,
+              type: 'increase',
+              period: 'son 3 ay'
+            }}
+            highlight={true}
+          />
+          
+          <EnhancedStatsCard
+            title="Aktif Projeler"
+            value={dashboardStats?.projects.active || 0}
+            icon={Building}
+            iconColor="text-purple-600"
+            description="Devam eden projeler"
+            loading={statsLoading}
+            variant="modern"
+            badge={{
+              text: 'Güncel',
+              variant: 'secondary'
+            }}
+          />
+        </StatsGrid>
+
+        {/* Charts and Analytics */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <InteractiveChartWrapper
+            onPeriodChange={(period) => console.log('Period changed:', period)}
+            selectedPeriod="30d"
+          >
+            <SavingsTrendChart
+              data={chartData}
+              title="Tasarruf Trendi"
+              description="Aylık tasarruf ve maliyet engelleme performansı"
+            />
+          </InteractiveChartWrapper>
+          
+          {currencyData.length > 0 ? (
+            <CurrencyDistributionChart
+              data={currencyData}
+              title="Para Birimi Dağılımı"
+              description="Tasarrufların para birimlerine göre dağılımı"
+            />
+          ) : (
+            <SavingsComparisonChart
+              data={{
+                labels: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran'],
+                datasets: [{
+                  label: 'Örnek Tasarruf',
+                  data: [50000, 75000, 60000, 90000, 85000, 120000],
+                  backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                }]
+              }}
+              title="Tasarruf Karşılaştırması"
+              description="Aylık tasarruf performans karşılaştırması"
+            />
+          )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions and Recent Activities */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-medium">
             <CardHeader>
-              <CardTitle>Hızlı İşlemler</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Hızlı İşlemler
+              </CardTitle>
               <CardDescription>
                 Sık kullanılan işlemleri buradan gerçekleştirebilirsiniz
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button 
-                className="w-full justify-start" 
+                className="w-full justify-start transition-all duration-200 hover:scale-[1.02]" 
                 variant="outline"
                 onClick={() => {
                   const projectsSection = document.querySelector('[data-projects-table]');
@@ -291,7 +360,7 @@ export default function DashboardPage() {
                 Proje Listesi
               </Button>
               <Button 
-                className="w-full justify-start" 
+                className="w-full justify-start transition-all duration-200 hover:scale-[1.02]" 
                 variant="outline"
                 onClick={() => router.push('/dashboard/reports')}
               >
@@ -300,7 +369,7 @@ export default function DashboardPage() {
               </Button>
               <Button 
                 onClick={() => setShowProjectForm(true)}
-                className="w-full justify-start" 
+                className="w-full justify-start transition-all duration-200 hover:scale-[1.02]" 
                 variant="outline"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -309,9 +378,12 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-medium">
             <CardHeader>
-              <CardTitle>Son Aktiviteler</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Son Aktiviteler
+              </CardTitle>
               <CardDescription>
                 Sistemimdeki son hareketler
               </CardDescription>
@@ -320,9 +392,9 @@ export default function DashboardPage() {
               {statsLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                    <div key={i} className="space-y-2">
+                      <EnhancedSkeleton className="h-4 w-3/4" variant="shimmer" />
+                      <EnhancedSkeleton className="h-3 w-1/2" variant="shimmer" />
                     </div>
                   ))}
                 </div>
@@ -335,8 +407,8 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-4">
                   {dashboardStats?.recent_activities.slice(0, 5).map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-3 pb-3 border-b border-border last:border-0">
-                      <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                    <div key={index} className="flex items-start space-x-3 pb-3 border-b border-border last:border-0 transition-colors duration-200 hover:bg-muted/50 -mx-2 px-2 py-1 rounded">
+                      <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2 animate-pulse"></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground">
                           {activity.activity_description}
@@ -344,7 +416,8 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">
                           {activity.project_name} • {activity.frn} • {activity.user_name}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
                           {activity.formatted_date}
                         </p>
                       </div>
