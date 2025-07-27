@@ -1,111 +1,78 @@
 <?php
-require_once '../config/cors.php';
+require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../auth/middleware.php';
 
-header('Content-Type: application/json');
+// Apply comprehensive security
+SecurityMiddleware::setupAPI(['POST', 'OPTIONS']);
 
 try {
-    // Sadece POST method
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode(['error' => 'Only POST method allowed']);
-        exit;
-    }
-    
     // Authentication - Admin ve user'lar yeni proje oluşturabilir
-    $auth_data = requireUserOrAbove();
+    $auth_data = SecurityMiddleware::authenticate(['user', 'admin']);
     $user_id = $auth_data['user_id'];
     $user_role = $auth_data['role'];
     
-    // Input verilerini al
+    // Input verilerini al ve validate et
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
-    // Zorunlu alanları kontrol et
-    $required_fields = [
-        'frn', 'entity', 'customer', 'project_name', 'event_type', 'project_type',
-        'group_in', 'group_out', 'location', 'po_amount', 'forte_responsible',
-        'project_director', 'forte_cc_person', 'client_representative'
+    // Enhanced input validation with security rules
+    $validationRules = [
+        'frn' => ['type' => 'text', 'required' => true, 'max_length' => 50],
+        'entity' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'customer' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'project_name' => ['type' => 'text', 'required' => true, 'max_length' => 200],
+        'event_type' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'project_type' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'group_in' => ['type' => 'date', 'required' => true],
+        'group_out' => ['type' => 'date', 'required' => true],
+        'location' => ['type' => 'text', 'required' => true, 'max_length' => 200],
+        'po_amount' => ['type' => 'numeric', 'required' => true, 'min' => 0.01],
+        'forte_responsible' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'project_director' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'forte_cc_person' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'client_representative' => ['type' => 'text', 'required' => true, 'max_length' => 100],
+        'hotels' => ['type' => 'text', 'required' => false, 'max_length' => 500],
+        'customer_po_number' => ['type' => 'text', 'required' => false, 'max_length' => 100],
+        'hcp_count' => ['type' => 'integer', 'required' => false, 'min' => 0],
+        'colleague_count' => ['type' => 'integer', 'required' => false, 'min' => 0],
+        'external_non_hcp_count' => ['type' => 'integer', 'required' => false, 'min' => 0]
     ];
-    $missing_fields = [];
     
-    foreach ($required_fields as $field) {
-        if (!isset($input[$field]) || trim($input[$field]) === '') {
-            $missing_fields[] = $field;
-        }
-    }
+    $validated = SecurityMiddleware::validateInput($input, $validationRules);
     
-    if (!empty($missing_fields)) {
-        http_response_code(400);
-        echo json_encode([
-            'error' => 'Missing required fields: ' . implode(', ', $missing_fields),
-            'required_fields' => $required_fields,
-            'received_fields' => array_keys($input)
-        ]);
-        exit;
-    }
+    // Extract validated values
+    $frn = $validated['frn'];
+    $entity = $validated['entity'];
+    $customer = $validated['customer'];
+    $project_name = $validated['project_name'];
+    $event_type = $validated['event_type'];
+    $project_type = $validated['project_type'];
+    $group_in = $validated['group_in'];
+    $group_out = $validated['group_out'];
+    $location = $validated['location'];
+    $hotels = $validated['hotels'] ?? '';
+    $po_amount = $validated['po_amount'];
+    $forte_responsible = $validated['forte_responsible'];
+    $project_director = $validated['project_director'];
+    $forte_cc_person = $validated['forte_cc_person'];
+    $client_representative = $validated['client_representative'];
+    $customer_po_number = $validated['customer_po_number'] ?? '';
+    $hcp_count = $validated['hcp_count'] ?? 0;
+    $colleague_count = $validated['colleague_count'] ?? 0;
+    $external_non_hcp_count = $validated['external_non_hcp_count'] ?? 0;
     
-    // Değerleri al ve validate et
-    $frn = trim($input['frn']);
-    $entity = trim($input['entity']);
-    $customer = trim($input['customer']);
-    $project_name = trim($input['project_name']);
-    $event_type = trim($input['event_type']);
-    $project_type = trim($input['project_type']);
-    $group_in = $input['group_in'];
-    $group_out = $input['group_out'];
-    $location = trim($input['location']);
-    $hotels = trim($input['hotels'] ?? '');
-    $po_amount = floatval($input['po_amount']);
-    $forte_responsible = trim($input['forte_responsible']);
-    $project_director = trim($input['project_director']);
-    $forte_cc_person = trim($input['forte_cc_person']);
-    $client_representative = trim($input['client_representative']);
-    $customer_po_number = trim($input['customer_po_number'] ?? '');
-    $hcp_count = intval($input['hcp_count'] ?? 0);
-    $colleague_count = intval($input['colleague_count'] ?? 0);
-    $external_non_hcp_count = intval($input['external_non_hcp_count'] ?? 0);
-    
-    // Validasyonlar
+    // Additional business logic validations
     if (strlen($frn) < 3) {
-        http_response_code(400);
-        echo json_encode(['error' => 'FRN must be at least 3 characters long']);
-        exit;
+        SecureErrorHandler::sendErrorResponse('INVALID_FRN', 'FRN must be at least 3 characters long', [], 400);
     }
     
-    if ($po_amount <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'PO amount must be greater than 0']);
-        exit;
-    }
-    
-    // Tarih formatlarını kontrol et
+    // Date validation is already handled by InputValidator
     $group_in_obj = DateTime::createFromFormat('Y-m-d', $group_in);
-    if (!$group_in_obj || $group_in_obj->format('Y-m-d') !== $group_in) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Group in date must be in YYYY-MM-DD format']);
-        exit;
-    }
-    
     $group_out_obj = DateTime::createFromFormat('Y-m-d', $group_out);
-    if (!$group_out_obj || $group_out_obj->format('Y-m-d') !== $group_out) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Group out date must be in YYYY-MM-DD format']);
-        exit;
-    }
     
     // Çıkış tarihi giriş tarihinden sonra olmalı
     if ($group_out_obj <= $group_in_obj) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Group out date must be after group in date']);
-        exit;
-    }
-    
-    // Sayısal değerlerin negatif olmaması
-    if ($hcp_count < 0 || $colleague_count < 0 || $external_non_hcp_count < 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Participant counts cannot be negative']);
-        exit;
+        SecureErrorHandler::sendErrorResponse('INVALID_DATE_RANGE', 'Group out date must be after group in date', [], 400);
     }
     
     $pdo = getDBConnection();
@@ -114,9 +81,7 @@ try {
     $frn_check = $pdo->prepare("SELECT id FROM projects WHERE frn = ?");
     $frn_check->execute([$frn]);
     if ($frn_check->fetch()) {
-        http_response_code(400);
-        echo json_encode(['error' => 'FRN already exists. Please use a unique FRN.']);
-        exit;
+        SecureErrorHandler::sendErrorResponse('DUPLICATE_FRN', 'FRN already exists. Please use a unique FRN.', [], 400);
     }
     
     // Veritabanına kaydet
@@ -178,14 +143,9 @@ try {
         'data' => $project
     ]);
 
+} catch (PDOException $e) {
+    SecureErrorHandler::handleDatabaseError($e, 'project creation');
 } catch (Exception $e) {
-    error_log("Project create error: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
-    ]);
+    SecureErrorHandler::handleException($e);
 }
 ?>

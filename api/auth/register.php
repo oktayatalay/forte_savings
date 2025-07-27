@@ -1,51 +1,42 @@
 <?php
-require_once '../config/cors.php';
+require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../config/mail.php';
 
-header('Content-Type: application/json');
+// Apply comprehensive security for registration
+SecurityMiddleware::setupAuth();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
-}
+// Additional rate limiting for registration
+RateLimiter::checkRegistrationLimit();
 
+// Validate input with enhanced security
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
+    SecureErrorHandler::sendErrorResponse('INVALID_INPUT', 'Invalid JSON input', [], 400);
 }
 
-// Validasyon
-$required_fields = ['email', 'password', 'first_name', 'last_name'];
-foreach ($required_fields as $field) {
-    if (!isset($input[$field]) || empty(trim($input[$field]))) {
-        http_response_code(400);
-        echo json_encode(['error' => "Field '$field' is required"]);
-        exit;
-    }
-}
+// Enhanced input validation with stronger rules
+$validationRules = [
+    'email' => ['type' => 'email', 'required' => true],
+    'password' => ['type' => 'password', 'required' => true, 'min_length' => 8],
+    'first_name' => ['type' => 'text', 'required' => true, 'max_length' => 50, 'allowed_chars' => '/^[a-zA-ZÀ-ÿ\s\-\'\.]+$/'],
+    'last_name' => ['type' => 'text', 'required' => true, 'max_length' => 50, 'allowed_chars' => '/^[a-zA-ZÀ-ÿ\s\-\'\.]+$/']
+];
 
-$email = filter_var(trim($input['email']), FILTER_VALIDATE_EMAIL);
-$password = trim($input['password']);
-$first_name = trim($input['first_name']);
-$last_name = trim($input['last_name']);
+$validated = SecurityMiddleware::validateInput($input, $validationRules);
+$email = $validated['email'];
+$password = $validated['password'];
+$first_name = $validated['first_name'];
+$last_name = $validated['last_name'];
 
-// Email domain kontrolü
-if (!$email || !str_ends_with($email, '@fortetourism.com')) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Only @fortetourism.com email addresses are allowed']);
-    exit;
-}
-
-// Şifre kontrolü
-if (strlen($password) < 6) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Password must be at least 6 characters long']);
-    exit;
+// Enhanced email domain kontrolü
+if (!str_ends_with($email, '@fortetourism.com')) {
+    SecurityHeaders::logSecurityEvent('invalid_domain_registration', [
+        'email' => $email,
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+    ]);
+    SecureErrorHandler::sendErrorResponse('DOMAIN_NOT_ALLOWED', 'Only @fortetourism.com email addresses are allowed', [], 400);
 }
 
 try {
@@ -56,9 +47,7 @@ try {
     $stmt->execute([$email]);
     
     if ($stmt->rowCount() > 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Email address is already registered']);
-        exit;
+        SecureErrorHandler::sendErrorResponse('EMAIL_EXISTS', 'Email address is already registered', [], 400);
     }
     
     // Şifreyi hash'le
@@ -111,8 +100,8 @@ try {
     ]);
     
 } catch (PDOException $e) {
-    error_log("Registration error: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => 'Registration failed. Please try again.']);
+    SecureErrorHandler::handleDatabaseError($e, 'user registration');
+} catch (Exception $e) {
+    SecureErrorHandler::handleException($e);
 }
 ?>

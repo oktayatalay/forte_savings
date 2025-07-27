@@ -1,38 +1,26 @@
 <?php
-require_once '../config/cors.php';
+require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 
-header('Content-Type: application/json');
+// Apply comprehensive security
+SecurityMiddleware::setupAuth();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
-}
-
+// Validate input with enhanced security
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
+    SecureErrorHandler::sendErrorResponse('INVALID_INPUT', 'Invalid JSON input', [], 400);
 }
 
-// Validasyon
-if (!isset($input['email']) || !isset($input['password'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Email and password are required']);
-    exit;
-}
+// Enhanced input validation
+$validationRules = [
+    'email' => ['type' => 'email', 'required' => true],
+    'password' => ['type' => 'text', 'required' => true, 'max_length' => 1000]
+];
 
-$email = filter_var(trim($input['email']), FILTER_VALIDATE_EMAIL);
-$password = trim($input['password']);
-
-if (!$email) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid email format']);
-    exit;
-}
+$validated = SecurityMiddleware::validateInput($input, $validationRules);
+$email = $validated['email'];
+$password = $validated['password'];
 
 try {
     $pdo = getDBConnection();
@@ -47,30 +35,26 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$user) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Invalid email or password']);
-        exit;
+        SecureErrorHandler::handleAuthError('Invalid email or password', 'AUTH_FAILED', 401);
     }
     
     // Şifre kontrolü
     if (!password_verify($password, $user['password_hash'])) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Invalid email or password']);
-        exit;
+        // Apply progressive delay for failed attempts
+        $attemptCount = RateLimiter::getStatus()['auth_attempts'] ?? 0;
+        RateLimiter::applyProgressiveDelay($email, $attemptCount);
+        
+        SecureErrorHandler::handleAuthError('Invalid email or password', 'AUTH_FAILED', 401);
     }
     
     // Kullanıcı aktif mi?
     if (!$user['is_active']) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Account is deactivated']);
-        exit;
+        SecureErrorHandler::handleAuthError('Account is deactivated', 'ACCOUNT_INACTIVE', 401);
     }
     
     // Email doğrulandı mı?
     if (!$user['email_verified']) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Email verification required']);
-        exit;
+        SecureErrorHandler::handleAuthError('Email verification required', 'EMAIL_NOT_VERIFIED', 401);
     }
     
     // JWT Secret'ı al
@@ -80,9 +64,7 @@ try {
     
     if (empty($jwt_secret)) {
         error_log("JWT secret not configured");
-        http_response_code(500);
-        echo json_encode(['error' => 'Authentication system not configured']);
-        exit;
+        SecureErrorHandler::sendErrorResponse('CONFIG_ERROR', 'Authentication system not configured', [], 500);
     }
     
     // JWT Token oluştur
@@ -138,8 +120,8 @@ try {
     ]);
     
 } catch (PDOException $e) {
-    error_log("Login error: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => 'Login failed. Please try again.']);
+    SecureErrorHandler::handleDatabaseError($e, 'user login');
+} catch (Exception $e) {
+    SecureErrorHandler::handleException($e);
 }
 ?>

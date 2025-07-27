@@ -1,33 +1,28 @@
 <?php
-require_once '../config/cors.php';
+require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../config/mail.php';
 
-header('Content-Type: application/json');
+// Apply comprehensive security for password reset
+SecurityMiddleware::setupAuth();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
-}
-
+// Validate input
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
+    SecureErrorHandler::sendErrorResponse('INVALID_INPUT', 'Invalid JSON input', [], 400);
 }
 
 // İki mod: token gönderme veya şifre sıfırlama
 if (isset($input['email'])) {
-    // Şifre sıfırlama token'ı gönder
-    $email = filter_var(trim($input['email']), FILTER_VALIDATE_EMAIL);
+    // Rate limiting for password reset requests
+    RateLimiter::checkPasswordResetLimit($input['email']);
     
-    if (!$email) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid email format']);
-        exit;
+    // Validate email input
+    try {
+        $email = InputValidator::validateEmail($input['email'], true);
+    } catch (InvalidArgumentException $e) {
+        SecureErrorHandler::sendErrorResponse('INVALID_EMAIL', $e->getMessage(), [], 400);
     }
     
     try {
@@ -82,9 +77,9 @@ if (isset($input['email'])) {
         ]);
         
     } catch (PDOException $e) {
-        error_log("Password reset request error: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Password reset request failed. Please try again.']);
+        SecureErrorHandler::handleDatabaseError($e, 'password reset request');
+    } catch (Exception $e) {
+        SecureErrorHandler::handleException($e);
     }
     
 } elseif (isset($input['token']) && isset($input['new_password'])) {
@@ -92,10 +87,11 @@ if (isset($input['email'])) {
     $token = trim($input['token']);
     $new_password = trim($input['new_password']);
     
-    if (strlen($new_password) < 6) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Password must be at least 6 characters long']);
-        exit;
+    // Validate password with enhanced security
+    try {
+        $new_password = InputValidator::validatePassword($new_password, 8);
+    } catch (InvalidArgumentException $e) {
+        SecureErrorHandler::sendErrorResponse('WEAK_PASSWORD', $e->getMessage(), [], 400);
     }
     
     try {
@@ -126,9 +122,11 @@ if (isset($input['email'])) {
         }
         
         if (!$user) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid reset token']);
-            exit;
+            SecurityHeaders::logSecurityEvent('invalid_reset_token', [
+                'token_provided' => substr($token, 0, 8) . '...',
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+            SecureErrorHandler::sendErrorResponse('INVALID_TOKEN', 'Invalid reset token', [], 400);
         }
         
         // Şifreyi güncelle
@@ -165,13 +163,12 @@ if (isset($input['email'])) {
         ]);
         
     } catch (PDOException $e) {
-        error_log("Password reset error: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Password reset failed. Please try again.']);
+        SecureErrorHandler::handleDatabaseError($e, 'password reset');
+    } catch (Exception $e) {
+        SecureErrorHandler::handleException($e);
     }
     
 } else {
-    http_response_code(400);
-    echo json_encode(['error' => 'Either email or token+new_password is required']);
+    SecureErrorHandler::sendErrorResponse('MISSING_PARAMETERS', 'Either email or token+new_password is required', [], 400);
 }
 ?>
