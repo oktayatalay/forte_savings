@@ -133,6 +133,39 @@ global.Request = class Request {
   }
 }
 
+// Mock TransformStream
+global.TransformStream = class TransformStream {
+  constructor() {
+    this.readable = new ReadableStream()
+    this.writable = new WritableStream()
+  }
+}
+
+// Mock ReadableStream
+global.ReadableStream = class ReadableStream {
+  constructor() {}
+  
+  getReader() {
+    return {
+      read: () => Promise.resolve({ done: true, value: undefined }),
+      releaseLock: () => {},
+    }
+  }
+}
+
+// Mock WritableStream
+global.WritableStream = class WritableStream {
+  constructor() {}
+  
+  getWriter() {
+    return {
+      write: () => Promise.resolve(),
+      close: () => Promise.resolve(),
+      abort: () => Promise.resolve(),
+    }
+  }
+}
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
