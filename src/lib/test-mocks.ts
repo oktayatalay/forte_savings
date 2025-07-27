@@ -130,6 +130,52 @@ export const handlers = [
   }),
 
   // Admin endpoints
+  http.get('/api/admin/users/list.php', () => {
+    return HttpResponse.json(mockApiResponses.success([
+      {
+        id: 1,
+        email: 'test@example.com',
+        first_name: 'Test',
+        last_name: 'User',
+        role: 'user',
+        status: 'active',
+        department: 'IT',
+        project_count: 5,
+        activity_count: 10,
+        last_activity: '2 hours ago',
+        email_verified: true,
+        two_factor_enabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+      }
+    ]))
+  }),
+
+  http.get('/api/admin/audit/logs.php', () => {
+    return HttpResponse.json(mockApiResponses.success([
+      {
+        id: 1,
+        user_id: 1,
+        user_name: 'Test User',
+        user_email: 'test@example.com',
+        action: 'login',
+        action_type: 'login',
+        resource_type: 'system',
+        description: 'User logged in successfully',
+        ip_address: '127.0.0.1',
+        user_agent: 'Mozilla/5.0',
+        device_type: 'desktop',
+        location: 'Test Location',
+        status: 'success',
+        risk_level: 'low',
+        created_at: '2024-01-01T12:00:00Z',
+        timestamp: '2024-01-01T12:00:00Z',
+        metadata: null,
+        session_id: 'test-session',
+        changes: null
+      }
+    ]))
+  }),
+
   http.get('/api/admin/users.php', () => {
     return HttpResponse.json(mockApiResponses.success({
       users: [

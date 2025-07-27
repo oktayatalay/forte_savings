@@ -2,7 +2,7 @@ import React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@/lib/test-utils';
-import { runAccessibilityTestSuite, createAccessibilityTest } from '@/src/__tests__/utils/accessibility-utils';
+import { runAccessibilityTestSuite, createAccessibilityTest } from '../../../__tests__/utils/accessibility-utils';
 
 // Import UI components
 import { Button } from '../button';
