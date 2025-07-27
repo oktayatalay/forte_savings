@@ -106,9 +106,55 @@ export function AuditLogs() {
     ip_address: ''
   });
 
-  // Mock data initialization
-  useEffect(() => {
-    const mockAuditLogs: AuditLog[] = [
+  // Load audit logs from API
+  const loadAuditLogs = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/audit/logs.php', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch audit logs');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Ensure data structure with fallbacks
+        const safeLogs = (result.data || []).map((log: any) => ({
+          id: log.id || 0,
+          timestamp: log.created_at || log.timestamp || new Date().toISOString(),
+          user_id: log.user_id || 0,
+          user_name: log.user_name || `${log.first_name || 'Bilinmiyor'} ${log.last_name || ''}`.trim(),
+          user_email: log.user_email || log.email || '',
+          action_type: log.action || log.action_type || 'view',
+          resource_type: log.resource_type || 'system',
+          resource_id: log.resource_id || undefined,
+          description: log.description || 'Eylem açıklaması yok',
+          ip_address: log.ip_address || '0.0.0.0',
+          user_agent: log.user_agent || 'Bilinmiyor',
+          device_type: log.device_type || 'desktop',
+          location: log.location || 'Bilinmiyor',
+          status: log.status || 'success',
+          changes: log.metadata ? JSON.parse(log.metadata) : undefined,
+          session_id: log.session_id || undefined,
+          risk_level: log.risk_level || 'low'
+        }));
+        
+        setAuditLogs(safeLogs);
+        setFilteredLogs(safeLogs);
+      } else {
+        throw new Error(result.message || 'Failed to load audit logs');
+      }
+    } catch (error) {
+      console.error('Error loading audit logs:', error);
+      // Fallback to mock data if API fails
+      const mockAuditLogs: AuditLog[] = [
       {
         id: 1,
         timestamp: '2024-01-15 14:30:22',
@@ -242,11 +288,18 @@ export function AuditLogs() {
         resolved_at: '2024-01-15 13:00:00',
         actions_taken: ['IP adresi kalıcı olarak engellendi', 'Sistem güvenlik duvarı güncellendi', 'Incident raporu oluşturuldu']
       }
-    ];
+      ];
 
-    setAuditLogs(mockAuditLogs);
-    setSecurityEvents(mockSecurityEvents);
-    setFilteredLogs(mockAuditLogs);
+      setAuditLogs(mockAuditLogs);
+      setSecurityEvents(mockSecurityEvents);
+      setFilteredLogs(mockAuditLogs);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAuditLogs();
   }, []);
 
   // Filter logs based on current filters

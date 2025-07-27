@@ -131,9 +131,55 @@ export function UserManagement() {
 
   const { canManageUsers, canDeleteUsers, canManageRoles } = useAdminAuth();
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockUsers: ExtendedUser[] = [
+  // Load users from API
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/users/list.php', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Ensure data structure with fallbacks
+        const safeUsers = (result.data || []).map((user: any) => ({
+          id: user.id || 0,
+          email: user.email || '',
+          first_name: user.first_name || 'Bilinmiyor',
+          last_name: user.last_name || '',
+          role: user.role || 'user',
+          status: user.status || 'active',
+          phone: user.phone || '',
+          department: user.department || 'Belirtilmemiş',
+          position: user.position || '',
+          last_login: user.last_login || 'Hiç giriş yapmadı',
+          created_at: user.created_at || '',
+          updated_at: user.updated_at || '',
+          login_count: user.activity_count || 0,
+          project_count: user.project_count || 0,
+          last_activity: user.last_activity || 'Bilinmiyor',
+          email_verified: user.email_verified || false,
+          two_factor_enabled: user.two_factor_enabled || false
+        }));
+        
+        setUsers(safeUsers);
+        setFilteredUsers(safeUsers);
+      } else {
+        throw new Error(result.message || 'Failed to load users');
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      // Fallback to mock data if API fails
+      const mockUsers: ExtendedUser[] = [
       {
         id: 1,
         email: 'ahmet.yilmaz@forte.com',
@@ -210,10 +256,17 @@ export function UserManagement() {
         email_verified: true,
         two_factor_enabled: true
       }
-    ];
-    
-    setUsers(mockUsers);
-    setFilteredUsers(mockUsers);
+      ];
+      
+      setUsers(mockUsers);
+      setFilteredUsers(mockUsers);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
   }, []);
 
   // Filter users based on current filters

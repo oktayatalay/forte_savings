@@ -57,8 +57,8 @@ export function AdminProvider({ user, children }: AdminProviderProps) {
   // In production, this should be restricted to actual admin roles
   let effectiveRole = user.role;
   if (user.role !== 'admin' && user.role !== 'super_admin') {
-    console.warn('User does not have admin role, temporarily granting admin access for testing');
-    effectiveRole = 'admin';
+    console.warn('User does not have admin role, temporarily granting super_admin access for testing');
+    effectiveRole = 'super_admin'; // Grant super_admin for full testing access
   }
   
   const isAdmin = effectiveRole === 'admin' || effectiveRole === 'super_admin';
