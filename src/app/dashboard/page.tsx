@@ -11,6 +11,7 @@ import { SavingsTrendChart, SavingsComparisonChart, CurrencyDistributionChart, I
 import { EnhancedNavigation, Breadcrumbs, useBreadcrumbs } from '@/components/enhanced-navigation';
 import { EnhancedSkeleton } from '@/components/loading-states';
 import { GlobalSearch } from '@/components/global-search';
+import { CurrencyMiniCards, CurrencyCards } from '@/components/currency-cards';
 import { Loader2, LogOut, Plus, FileText, Users, TrendingUp, Building, DollarSign, Clock, BarChart3, PieChart, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -259,29 +260,31 @@ export default function DashboardPage() {
             }}
           />
           
-          <EnhancedStatsCard
-            title="Toplam Tasarruf"
-            value={statsLoading ? 0 : 
-                   dashboardStats?.savings.by_currency.length === 0 ? '₺0' :
-                   new Intl.NumberFormat('tr-TR', {
-                     style: 'currency',
-                     currency: dashboardStats?.savings.by_currency[0]?.currency || 'TRY',
-                     minimumFractionDigits: 0,
-                     maximumFractionDigits: 0
-                   }).format(dashboardStats?.savings.primary_currency_total || 0)}
-            icon={DollarSign}
-            iconColor="text-emerald-600"
-            description={statsLoading ? 'Yükleniyor...' : 
-                        `${dashboardStats?.savings.total_records || 0} kayıt`}
-            loading={statsLoading}
-            variant="gradient"
-            change={{
-              value: 24,
-              type: 'increase',
-              period: 'son 3 ay'
-            }}
-            highlight={true}
-          />
+          <Card className="col-span-1 transition-all duration-300 hover:shadow-medium bg-gradient-to-br from-primary/5 via-primary/5 to-primary/10 border-primary/20 shadow-glow">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-emerald-600">
+                <DollarSign className="w-5 h-5" />
+                Toplam Tasarruf
+              </CardTitle>
+              <CardDescription>
+                {statsLoading ? 'Yükleniyor...' : 
+                `${dashboardStats?.savings.total_records || 0} kayıt • ${dashboardStats?.savings.by_currency.length || 0} para birimi`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statsLoading ? (
+                <div className="space-y-2">
+                  <EnhancedSkeleton className="h-6 w-20" />
+                  <EnhancedSkeleton className="h-4 w-16" />
+                </div>
+              ) : (
+                <CurrencyMiniCards 
+                  data={dashboardStats?.savings.by_currency || []}
+                  className="flex-wrap"
+                />
+              )}
+            </CardContent>
+          </Card>
           
           <EnhancedStatsCard
             title="Aktif Projeler"
@@ -297,6 +300,29 @@ export default function DashboardPage() {
             }}
           />
         </StatsGrid>
+
+        {/* Currency Breakdown Section */}
+        {!statsLoading && dashboardStats?.savings.by_currency && dashboardStats.savings.by_currency.length > 0 && (
+          <Card className="mb-8 transition-all duration-300 hover:shadow-medium">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary" />
+                Para Birimi Detayları
+              </CardTitle>
+              <CardDescription>
+                Tasarruflarınızın para birimlerine göre detaylı dağılımı
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <CurrencyCards 
+                  data={dashboardStats.savings.by_currency}
+                  compact={true}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts and Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

@@ -9,6 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, Calendar, Users, MapPin, Building, DollarSign, FileText, TrendingUp, Plus, Edit, Trash } from 'lucide-react';
 import { SavingsRecordForm } from '@/components/savings-record-form';
 import { ProjectForm } from '@/components/project-form';
+import { EnhancedStatsCard, StatsGrid } from '@/components/enhanced-stats-card';
+import { CurrencyCards } from '@/components/currency-cards';
+import { cn } from '@/lib/utils';
 
 interface ProjectDetail {
   id: number;
@@ -367,119 +370,121 @@ function ProjectDetailContent() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button onClick={() => router.push('/dashboard')} variant="outline" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">{project.project_name}</h1>
-            <p className="text-gray-600">{project.customer} • {project.frn}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          {canEditProject() && (
-            <Button 
-              onClick={() => setShowProjectEditForm(true)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Edit className="w-4 h-4" />
-              Projeyi Düzenle
-            </Button>
-          )}
-          {getPermissionBadge(userPermission)}
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Tasarruf</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              {statistics.by_currency.length === 0 ? (
-                <div className="text-2xl font-bold text-green-600">₺0</div>
-              ) : (
-                <div className="space-y-1">
-                  {statistics.by_currency
-                    .filter(currencyData => currencyData.savings > 0)
-                    .sort((a, b) => b.savings - a.savings)
-                    .map((currencyData, index) => (
-                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold text-green-600" : "text-sm font-medium text-green-600"}>
-                      {formatCurrency(currencyData.savings, currencyData.currency)}
-                    </div>
-                  ))}
-                  {statistics.by_currency.every(c => c.savings === 0) && (
-                    <div className="text-2xl font-bold text-green-600">₺0</div>
-                  )}
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <Card className="transition-all duration-300 hover:shadow-medium border-none bg-gradient-to-r from-primary/5 via-background to-primary/5">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button 
+                  onClick={() => router.push('/dashboard')} 
+                  variant="outline" 
+                  size="sm"
+                  className="shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Geri
+                </Button>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    {project.project_name}
+                  </h1>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge variant="secondary" className="font-medium">
+                      {project.customer}
+                    </Badge>
+                    <Badge variant="outline" className="font-medium">
+                      {project.frn}
+                    </Badge>
+                    <Badge variant="outline" className={cn(
+                      "font-medium",
+                      project.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"
+                    )}>
+                      {project.is_active ? 'Aktif' : 'Pasif'}
+                    </Badge>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Maliyet Engelleme</CardTitle>
-              <DollarSign className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              {statistics.by_currency.length === 0 ? (
-                <div className="text-2xl font-bold text-blue-600">₺0</div>
-              ) : (
-                <div className="space-y-1">
-                  {statistics.by_currency
-                    .filter(currencyData => currencyData.cost_avoidance > 0)
-                    .sort((a, b) => b.cost_avoidance - a.cost_avoidance)
-                    .map((currencyData, index) => (
-                    <div key={currencyData.currency} className={index === 0 ? "text-lg font-bold text-blue-600" : "text-sm font-medium text-blue-600"}>
-                      {formatCurrency(currencyData.cost_avoidance, currencyData.currency)}
-                    </div>
-                  ))}
-                  {statistics.by_currency.every(c => c.cost_avoidance === 0) && (
-                    <div className="text-2xl font-bold text-blue-600">₺0</div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Kayıt</CardTitle>
-              <FileText className="h-4 w-4 text-gray-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.total_savings_records}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Son Kayıt</CardTitle>
-              <Calendar className="h-4 w-4 text-gray-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statistics.last_record_date ? formatDate(statistics.last_record_date) : 'Yok'}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              <div className="flex items-center space-x-3">
+                {canEditProject() && (
+                  <Button 
+                    onClick={() => setShowProjectEditForm(true)}
+                    variant="outline"
+                    className="flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Projeyi Düzenle
+                  </Button>
+                )}
+                {getPermissionBadge(userPermission)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Project Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building className="w-5 h-5 mr-2" />
-              Proje Bilgileri
-            </CardTitle>
-          </CardHeader>
+        {/* Statistics Cards */}
+        {statistics && (
+          <StatsGrid columns={4} className="mb-8">
+            <EnhancedStatsCard
+              title="Toplam Kayıt"
+              value={statistics.total_savings_records}
+              icon={FileText}
+              iconColor="text-primary"
+              description="Tasarruf kayıtları"
+              variant="modern"
+              interactive={true}
+            />
+            
+            <EnhancedStatsCard
+              title="Son Kayıt Tarihi"
+              value={statistics.last_record_date ? formatDate(statistics.last_record_date) : 'Yok'}
+              icon={Calendar}
+              iconColor="text-blue-600"
+              description="En son eklenen kayıt"
+              variant="modern"
+            />
+            
+            <Card className="col-span-2 transition-all duration-300 hover:shadow-medium bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200/50 dark:border-green-800/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <TrendingUp className="w-5 h-5" />
+                  Tasarruf Detayları
+                </CardTitle>
+                <CardDescription>
+                  Para birimlerine göre tasarruf ve maliyet engelleme
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {statistics.by_currency.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Henüz tasarruf kaydı bulunmuyor
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <CurrencyCards 
+                      data={statistics.by_currency}
+                      compact={true}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </StatsGrid>
+        )}
+
+        {/* Project Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="transition-all duration-300 hover:shadow-medium">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Building className="w-5 h-5" />
+                Proje Bilgileri
+              </CardTitle>
+              <CardDescription>
+                Temel proje detayları ve özellikler
+              </CardDescription>
+            </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -527,13 +532,16 @@ function ProjectDetailContent() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              Ekip ve İletişim
-            </CardTitle>
-          </CardHeader>
+          <Card className="transition-all duration-300 hover:shadow-medium">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                <Users className="w-5 h-5" />
+                Ekip ve İletişim
+              </CardTitle>
+              <CardDescription>
+                Proje ekibi ve iletişim bilgileri
+              </CardDescription>
+            </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-600">Forte Sorumlusu</label>
@@ -575,46 +583,60 @@ function ProjectDetailContent() {
         </Card>
       </div>
 
-      {/* Savings Records Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Tasarruf Kayıtları</CardTitle>
-              <CardDescription>
-                {savingsRecords.length} kayıt bulundu • Toplam: {formatCurrency(statistics?.total_amount || 0)}
-              </CardDescription>
+        {/* Savings Records Table */}
+        <Card className="transition-all duration-300 hover:shadow-medium">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <FileText className="w-5 h-5" />
+                  Tasarruf Kayıtları
+                </CardTitle>
+                <CardDescription>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span>{savingsRecords.length} kayıt bulundu</span>
+                    <span>•</span>
+                    <span>Toplam: {formatCurrency(statistics?.total_amount || 0)}</span>
+                  </div>
+                </CardDescription>
+              </div>
+              {(userPermission === 'admin' || userPermission === 'owner' || userPermission === 'cc') && (
+                <Button 
+                  onClick={() => setShowAddForm(true)}
+                  className="flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <Plus className="w-4 h-4" />
+                  Yeni Kayıt Ekle
+                </Button>
+              )}
             </div>
-            {(userPermission === 'admin' || userPermission === 'owner' || userPermission === 'cc') && (
-              <Button 
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Yeni Kayıt Ekle
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {savingsRecords.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tarih</TableHead>
-                  <TableHead>Tür</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Açıklama</TableHead>
-                  <TableHead className="text-right">Birim Fiyat</TableHead>
-                  <TableHead className="text-right">Adet</TableHead>
-                  <TableHead className="text-right">Toplam</TableHead>
-                  <TableHead>Oluşturan</TableHead>
-                  <TableHead className="text-center">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {savingsRecords.map((record) => (
-                  <TableRow key={record.id}>
+          </CardHeader>
+          <CardContent>
+            {savingsRecords.length > 0 ? (
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-muted/50 transition-colors">
+                      <TableHead className="font-semibold">Tarih</TableHead>
+                      <TableHead className="font-semibold">Tür</TableHead>
+                      <TableHead className="font-semibold">Kategori</TableHead>
+                      <TableHead className="font-semibold">Açıklama</TableHead>
+                      <TableHead className="text-right font-semibold">Birim Fiyat</TableHead>
+                      <TableHead className="text-right font-semibold">Adet</TableHead>
+                      <TableHead className="text-right font-semibold">Toplam</TableHead>
+                      <TableHead className="font-semibold">Oluşturan</TableHead>
+                      <TableHead className="text-center font-semibold">İşlemler</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {savingsRecords.map((record, index) => (
+                      <TableRow 
+                        key={record.id}
+                        className={cn(
+                          "hover:bg-muted/30 transition-all duration-200",
+                          index % 2 === 0 && "bg-muted/10"
+                        )}
+                      >
                     <TableCell>{formatDate(record.date)}</TableCell>
                     <TableCell>{getTypeBadge(record.type)}</TableCell>
                     <TableCell>{record.category}</TableCell>
@@ -637,7 +659,7 @@ function ProjectDetailContent() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEdit(record)}
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 shadow-sm hover:shadow-md transition-all duration-200"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -646,7 +668,7 @@ function ProjectDetailContent() {
                               size="sm"
                               onClick={() => handleDelete(record.id)}
                               disabled={deletingId === record.id}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 shadow-sm hover:shadow-md transition-all duration-200"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
@@ -655,16 +677,28 @@ function ProjectDetailContent() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              Henüz tasarruf kaydı bulunmuyor.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Henüz kayıt bulunmuyor</h3>
+                <p className="text-muted-foreground mb-4">Bu proje için henüz tasarruf kaydı eklenmemiş.</p>
+                {(userPermission === 'admin' || userPermission === 'owner' || userPermission === 'cc') && (
+                  <Button 
+                    onClick={() => setShowAddForm(true)}
+                    className="shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    İlk Kaydı Ekle
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Savings Record Form Modal */}
       {project && (
@@ -686,6 +720,7 @@ function ProjectDetailContent() {
           editProject={project}
         />
       )}
+      </div>
     </div>
   );
 }

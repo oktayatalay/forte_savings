@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Building2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -53,24 +54,42 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Forte Savings</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse-slow" />
+      </div>
+      
+      <Card className="w-full max-w-md shadow-glow border-border/50 bg-card/80 backdrop-blur-sm relative overflow-hidden animate-fade-in-up">
+        {/* Sparkle effect */}
+        <div className="absolute top-4 right-4">
+          <Sparkles className="w-4 h-4 text-primary/30 animate-pulse" />
+        </div>
+        
+        <CardHeader className="text-center pb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Building2 className="w-6 h-6 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Forte Savings
+          </CardTitle>
+          <CardDescription className="text-base">
             Hesabınıza giriş yapın
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20 animate-shake">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
-            <div className="space-y-2">
-              <Label htmlFor="email">E-posta</Label>
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-sm font-medium">E-posta</Label>
               <Input
                 id="email"
                 type="email"
@@ -79,11 +98,16 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                className={cn(
+                  "h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20",
+                  "bg-background/50 border-border/60 focus:border-primary/50",
+                  loading && "opacity-50 cursor-not-allowed"
+                )}
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
+            <div className="space-y-3">
+              <Label htmlFor="password" className="text-sm font-medium">Şifre</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -93,25 +117,38 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
+                  className={cn(
+                    "h-11 pr-12 transition-all duration-200 focus:ring-2 focus:ring-primary/20",
+                    "bg-background/50 border-border/60 focus:border-primary/50",
+                    loading && "opacity-50 cursor-not-allowed"
+                  )}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent transition-all duration-200"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
             </div>
             
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className={cn(
+                "w-full h-11 shadow-md hover:shadow-lg transition-all duration-200",
+                "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary",
+                loading && "opacity-75 cursor-not-allowed"
+              )}
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -123,16 +160,27 @@ export default function LoginPage() {
             </Button>
           </form>
           
-          <div className="mt-6 text-center space-y-2">
+          <div className="mt-8 text-center space-y-3">
             <Link 
               href="/auth/forgot-password" 
-              className="text-sm text-muted-foreground hover:text-primary"
+              className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:underline"
             >
               Şifremi unuttum
             </Link>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/50"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-2 text-muted-foreground">veya</span>
+              </div>
+            </div>
             <div className="text-sm text-muted-foreground">
               Hesabınız yok mu?{' '}
-              <Link href="/auth/register" className="text-primary hover:underline">
+              <Link 
+                href="/auth/register" 
+                className="font-medium text-primary hover:text-primary/80 transition-colors duration-200 hover:underline"
+              >
                 Kayıt olun
               </Link>
             </div>

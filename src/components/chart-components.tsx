@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,6 +57,19 @@ interface SavingsTrendChartProps {
 
 export function SavingsTrendChart({ data, title, description, className }: SavingsTrendChartProps) {
   const chartRef = useRef(null);
+  const { resolvedTheme } = useTheme();
+  const [chartKey, setChartKey] = useState(0);
+  
+  // Force re-render when theme changes
+  useEffect(() => {
+    setChartKey(prev => prev + 1);
+  }, [resolvedTheme]);
+
+  // Theme-aware colors
+  const getTextColor = () => {
+    const isDark = resolvedTheme === 'dark';
+    return isDark ? '#e5e7eb' : '#6b7280'; // gray-200 for dark, gray-500 for light
+  };
 
   const options = {
     responsive: true,
@@ -98,7 +112,7 @@ export function SavingsTrendChart({ data, title, description, className }: Savin
           font: {
             size: 11,
           },
-          color: '#6b7280',
+          color: getTextColor(),
         },
       },
       y: {
@@ -161,7 +175,7 @@ export function SavingsTrendChart({ data, title, description, className }: Savin
       </CardHeader>
       <CardContent>
         <div className="h-80">
-          <Line ref={chartRef} data={data} options={options} />
+          <Line key={chartKey} ref={chartRef} data={data} options={options} />
         </div>
       </CardContent>
     </Card>
@@ -176,6 +190,20 @@ interface SavingsComparisonChartProps {
 }
 
 export function SavingsComparisonChart({ data, title, description, className }: SavingsComparisonChartProps) {
+  const { resolvedTheme } = useTheme();
+  const [chartKey, setChartKey] = useState(0);
+  
+  // Force re-render when theme changes
+  useEffect(() => {
+    setChartKey(prev => prev + 1);
+  }, [resolvedTheme]);
+
+  // Theme-aware colors
+  const getTextColor = () => {
+    const isDark = resolvedTheme === 'dark';
+    return isDark ? '#e5e7eb' : '#6b7280'; // gray-200 for dark, gray-500 for light
+  };
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -220,7 +248,7 @@ export function SavingsComparisonChart({ data, title, description, className }: 
           font: {
             size: 11,
           },
-          color: '#6b7280',
+          color: getTextColor(),
         },
       },
       y: {
@@ -270,7 +298,7 @@ export function SavingsComparisonChart({ data, title, description, className }: 
       </CardHeader>
       <CardContent>
         <div className="h-80">
-          <Bar data={data} options={options} />
+          <Bar key={chartKey} data={data} options={options} />
         </div>
       </CardContent>
     </Card>
@@ -289,6 +317,14 @@ interface CurrencyDistributionChartProps {
 }
 
 export function CurrencyDistributionChart({ data, title, description, className }: CurrencyDistributionChartProps) {
+  const { theme, resolvedTheme } = useTheme();
+  const [chartKey, setChartKey] = useState(0);
+  
+  // Force re-render when theme changes
+  useEffect(() => {
+    setChartKey(prev => prev + 1);
+  }, [theme, resolvedTheme]);
+
   const chartData = {
     labels: data.map(item => item.currency),
     datasets: [
@@ -300,6 +336,12 @@ export function CurrencyDistributionChart({ data, title, description, className 
         hoverBorderWidth: 3,
       },
     ],
+  };
+
+  // Theme-aware colors
+  const getTextColor = () => {
+    const isDark = resolvedTheme === 'dark';
+    return isDark ? '#e5e7eb' : '#374151'; // gray-200 for dark, gray-700 for light
   };
 
   const options = {
@@ -314,10 +356,12 @@ export function CurrencyDistributionChart({ data, title, description, className 
           font: {
             size: 12,
           },
+          color: getTextColor(),
           generateLabels: function(chart: any) {
             const data = chart.data;
             if (data.labels.length && data.datasets.length) {
               const total = data.datasets[0].data.reduce((sum: number, value: number) => sum + value, 0);
+              const textColor = getTextColor();
               return data.labels.map((label: string, i: number) => {
                 const value = data.datasets[0].data[i];
                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
@@ -326,6 +370,7 @@ export function CurrencyDistributionChart({ data, title, description, className 
                   fillStyle: data.datasets[0].backgroundColor[i],
                   strokeStyle: data.datasets[0].borderColor[i],
                   lineWidth: data.datasets[0].borderWidth,
+                  fontColor: textColor,
                   hidden: false,
                   index: i,
                 };
@@ -383,7 +428,7 @@ export function CurrencyDistributionChart({ data, title, description, className 
       </CardHeader>
       <CardContent>
         <div className="relative h-80">
-          <Doughnut data={chartData} options={options} />
+          <Doughnut key={chartKey} data={chartData} options={options} />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-2xl font-bold">

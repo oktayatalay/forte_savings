@@ -28,6 +28,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ProjectForm } from '@/components/project-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface Project {
   id: number;
@@ -88,6 +89,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('updated_at');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+  const [sortLoading, setSortLoading] = useState(false);
   
   // Edit/Delete states
   const [editProject, setEditProject] = useState<any>(null);
@@ -98,9 +100,14 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
     loading: false
   });
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (showLoadingIndicator = true, isSorting = false) => {
     try {
-      setLoading(true);
+      if (showLoadingIndicator) {
+        setLoading(true);
+      }
+      if (isSorting) {
+        setSortLoading(true);
+      }
       const token = localStorage.getItem('auth_token');
       
       if (!token) {
@@ -144,13 +151,27 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
     } catch (err: any) {
       setError(err.message || 'Bağlantı hatası oluştu.');
     } finally {
-      setLoading(false);
+      if (showLoadingIndicator) {
+        setLoading(false);
+      }
+      if (isSorting) {
+        setSortLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, sortBy, sortOrder]);
+  }, [currentPage]);
+
+  // Separate effect for sorting to avoid full reload
+  useEffect(() => {
+    if (currentPage === 1) {
+      fetchProjects(false, true); // Don't show loading indicator for sorting, but show sort loading
+    } else {
+      setCurrentPage(1); // Reset to first page when sorting
+    }
+  }, [sortBy, sortOrder]);
 
   // Arama işlemi (debounced)
   useEffect(() => {
@@ -175,8 +196,10 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
   };
 
   const getSortIcon = (field: string) => {
-    if (sortBy !== field) return <ArrowUpDown className="w-4 h-4" />;
-    return sortOrder === 'ASC' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+    if (sortBy !== field) return <ArrowUpDown className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />;
+    return sortOrder === 'ASC' ? 
+      <ArrowUp className="w-4 h-4 text-primary" /> : 
+      <ArrowDown className="w-4 h-4 text-primary" />;
   };
 
   const formatCurrency = (amount: number) => {
@@ -308,26 +331,29 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card className={cn("transition-all duration-300 hover:shadow-medium", className)}>
+      <CardHeader className="pb-4">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <FileText className="w-5 h-5 text-primary" />
               Projelerim
+              {sortLoading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2"></div>
+              )}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-1">
               Sahip olduğunuz ve CC olarak atandığınız projeler
             </CardDescription>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              Toplam: {totalRecords} proje
+            <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              Toplam: <span className="font-medium">{totalRecords}</span> proje
             </div>
             {onNewProject && (
               <Button 
                 onClick={onNewProject}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 <Building className="w-4 h-4" />
                 Yeni Proje
@@ -346,9 +372,14 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
               placeholder="FRN, müşteri, proje adı ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-muted/30 border-muted-foreground/20 focus:bg-background transition-colors duration-200"
             />
           </div>
+          {searchTerm && (
+            <div className="text-xs text-muted-foreground">
+              "{searchTerm}" için sonuçlar
+            </div>
+          )}
         </div>
 
         {/* Tablo */}
@@ -372,54 +403,62 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
           </div>
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('frn')}>
-                    <div className="flex items-center gap-2">
-                      FRN {getSortIcon('frn')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('customer')}>
-                    <div className="flex items-center gap-2">
-                      Müşteri {getSortIcon('customer')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('project_name')}>
-                    <div className="flex items-center gap-2">
-                      Proje Adı {getSortIcon('project_name')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('forte_responsible')}>
-                    <div className="flex items-center gap-2">
-                      Sorumlu {getSortIcon('forte_responsible')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('group_in')}>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Başlangıç {getSortIcon('group_in')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('actual_savings')}>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      Tasarruf {getSortIcon('actual_savings')}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('cost_avoidance')}>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-blue-600" />
-                      Maliyet Eng. {getSortIcon('cost_avoidance')}
-                    </div>
-                  </TableHead>
-                  <TableHead>Yetki</TableHead>
-                  <TableHead>İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {projects.map((project) => (
-                  <TableRow key={project.id}>
+            <div className="rounded-lg border border-border/50 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-muted/50 transition-colors">
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('frn')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        FRN {getSortIcon('frn')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('customer')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        Müşteri {getSortIcon('customer')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('project_name')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        Proje Adı {getSortIcon('project_name')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('forte_responsible')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        Sorumlu {getSortIcon('forte_responsible')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('group_in')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <Calendar className="w-4 h-4" />
+                        Başlangıç {getSortIcon('group_in')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('actual_savings')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                        Tasarruf {getSortIcon('actual_savings')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer group font-semibold" onClick={() => handleSort('cost_avoidance')}>
+                      <div className="flex items-center gap-2 hover:text-primary transition-colors">
+                        <DollarSign className="w-4 h-4 text-blue-600" />
+                        Maliyet Eng. {getSortIcon('cost_avoidance')}
+                      </div>
+                    </TableHead>
+                    <TableHead className="font-semibold">Yetki</TableHead>
+                    <TableHead className="font-semibold">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projects.map((project, index) => (
+                    <TableRow 
+                      key={project.id}
+                      className={cn(
+                        "hover:bg-muted/30 transition-all duration-200 group",
+                        sortLoading && "opacity-60",
+                        index % 2 === 0 && "bg-muted/10"
+                      )}
+                    >
                     <TableCell className="font-medium">
                       {project.frn}
                     </TableCell>
@@ -509,6 +548,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                           variant="outline" 
                           size="sm"
                           onClick={() => router.push(`/dashboard/project-detail?id=${project.id}`)}
+                          className="shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           Detay
@@ -517,7 +557,11 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                         {(canEditProject(project) || canDeleteProject(project)) && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="shadow-sm hover:shadow-md transition-all duration-200"
+                              >
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -543,14 +587,15 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Sayfalama */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
+                <div className="text-sm text-muted-foreground bg-muted/30 px-3 py-1 rounded-full">
                   {totalRecords} kayıttan {((currentPage - 1) * perPage) + 1}-{Math.min(currentPage * perPage, totalRecords)} arası gösteriliyor
                 </div>
                 <div className="flex items-center gap-2">
@@ -559,6 +604,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     size="sm"
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
+                    className="shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Önceki
@@ -572,7 +618,10 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(pageNum)}
-                          className="w-10 h-10"
+                          className={cn(
+                            "w-10 h-10 shadow-sm hover:shadow-md transition-all duration-200",
+                            currentPage === pageNum && "shadow-md"
+                          )}
                         >
                           {pageNum}
                         </Button>
@@ -584,6 +633,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     size="sm"
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
+                    className="shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     Sonraki
                     <ChevronRight className="w-4 h-4" />

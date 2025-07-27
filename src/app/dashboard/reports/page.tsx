@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, FileText, TrendingUp, DollarSign, Calendar, Download } from 'lucide-react';
+import { ArrowLeft, FileText, TrendingUp, DollarSign, Calendar, Download, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { EnhancedStatsCard, StatsGrid } from '@/components/enhanced-stats-card';
+import { CurrencyCards } from '@/components/currency-cards';
+import { cn } from '@/lib/utils';
 
 interface ReportsStats {
   total_projects: number;
@@ -111,70 +114,67 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Geri Dön
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Raporlar</h1>
-            <p className="text-muted-foreground">Proje ve tasarruf istatistikleri</p>
-          </div>
-        </div>
+        <Card className="transition-all duration-300 hover:shadow-medium border-none bg-gradient-to-r from-primary/5 via-background to-primary/5">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center gap-2 shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Geri Dön
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent flex items-center gap-2">
+                  <BarChart3 className="w-8 h-8 text-primary" />
+                  Raporlar
+                </h1>
+                <p className="text-muted-foreground">Proje ve tasarruf istatistikleri</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Projeler</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.total_projects || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.active_projects || 0} aktif proje
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tasarruf Kayıtları</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.total_savings_records || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                toplam kayıt
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Para Birimleri</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.savings_by_currency.length || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                farklı para birimi
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsGrid columns={3} className="mb-8">
+          <EnhancedStatsCard
+            title="Toplam Projeler"
+            value={stats?.total_projects || 0}
+            icon={FileText}
+            iconColor="text-blue-600"
+            description={`${stats?.active_projects || 0} aktif proje`}
+            variant="gradient"
+            interactive={true}
+          />
+          
+          <EnhancedStatsCard
+            title="Tasarruf Kayıtları"
+            value={stats?.total_savings_records || 0}
+            icon={Calendar}
+            iconColor="text-green-600"
+            description="toplam kayıt"
+            variant="modern"
+          />
+          
+          <EnhancedStatsCard
+            title="Para Birimleri"
+            value={stats?.savings_by_currency.length || 0}
+            icon={DollarSign}
+            iconColor="text-emerald-600"
+            description="farklı para birimi"
+            variant="gradient"
+            highlight={true}
+          />
+        </StatsGrid>
 
         {/* Currency Breakdown */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="transition-all duration-300 hover:shadow-medium">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <TrendingUp className="w-5 h-5" />
               Para Birimine Göre Tasarruf Dağılımı
             </CardTitle>
@@ -184,58 +184,26 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {stats?.savings_by_currency.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <TrendingUp className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>Henüz tasarruf kaydı bulunmuyor</p>
+              <div className="text-center py-12">
+                <TrendingUp className="mx-auto h-16 w-16 mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-medium mb-2">Henüz tasarruf kaydı bulunmuyor</h3>
+                <p className="text-muted-foreground">Projelerinize tasarruf kayıtları eklendiğinde burada görüntülenecek.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {stats?.savings_by_currency
-                  .sort((a, b) => b.total - a.total)
-                  .map((currencyData) => (
-                  <div key={currencyData.currency} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-semibold text-lg">
-                        {currencyData.currency}
-                      </h3>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold">
-                          {formatCurrency(currencyData.total, currencyData.currency)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {currencyData.record_count} kayıt
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded">
-                        <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                          Tasarruf
-                        </p>
-                        <p className="text-lg font-bold text-green-600">
-                          {formatCurrency(currencyData.savings, currencyData.currency)}
-                        </p>
-                      </div>
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                          Maliyet Engelleme
-                        </p>
-                        <p className="text-lg font-bold text-blue-600">
-                          {formatCurrency(currencyData.cost_avoidance, currencyData.currency)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <CurrencyCards 
+                  data={stats?.savings_by_currency || []}
+                  compact={false}
+                />
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Export Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="transition-all duration-300 hover:shadow-medium">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
               <Download className="w-5 h-5" />
               Rapor Dışa Aktarma
             </CardTitle>
@@ -243,22 +211,40 @@ export default function ReportsPage() {
               Raporları farklı formatlarda dışa aktarın
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="w-full" disabled>
-                <FileText className="mr-2 h-4 w-4" />
-                PDF Raporu
-                <span className="ml-2 text-xs text-muted-foreground">(Yakında)</span>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
+                disabled
+              >
+                <FileText className="h-6 w-6 text-red-500" />
+                <div className="text-center">
+                  <div className="font-medium">PDF Raporu</div>
+                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                </div>
               </Button>
-              <Button variant="outline" className="w-full" disabled>
-                <FileText className="mr-2 h-4 w-4" />
-                Excel Raporu
-                <span className="ml-2 text-xs text-muted-foreground">(Yakında)</span>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
+                disabled
+              >
+                <FileText className="h-6 w-6 text-green-500" />
+                <div className="text-center">
+                  <div className="font-medium">Excel Raporu</div>
+                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                </div>
               </Button>
-              <Button variant="outline" className="w-full" disabled>
-                <Download className="mr-2 h-4 w-4" />
-                CSV Dışa Aktarma
-                <span className="ml-2 text-xs text-muted-foreground">(Yakında)</span>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
+                disabled
+              >
+                <Download className="h-6 w-6 text-blue-500" />
+                <div className="text-center">
+                  <div className="font-medium">CSV Dışa Aktarma</div>
+                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                </div>
               </Button>
             </div>
           </CardContent>
