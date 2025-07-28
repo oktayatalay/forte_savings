@@ -1,8 +1,10 @@
-import { axe, toHaveNoViolations } from 'jest-axe';
 import { RenderResult } from '@testing-library/react';
 
-// Extend Jest matchers
-expect.extend(toHaveNoViolations);
+// Conditionally import and extend Jest matchers only in test environment
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+  const { axe, toHaveNoViolations } = require('jest-axe');
+  expect.extend(toHaveNoViolations);
+}
 
 // Accessibility testing configuration
 export const accessibilityConfig = {
@@ -26,12 +28,15 @@ export const testAccessibility = async (
   container: HTMLElement,
   options?: any
 ): Promise<void> => {
-  const results = await axe(container, {
-    ...accessibilityConfig,
-    ...options,
-  });
-  
-  expect(results).toHaveNoViolations();
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+    const { axe } = require('jest-axe');
+    const results = await axe(container, {
+      ...accessibilityConfig,
+      ...options,
+    });
+    
+    expect(results).toHaveNoViolations();
+  }
 };
 
 // Test keyboard navigation
@@ -78,7 +83,7 @@ export const testAriaAttributes = (container: HTMLElement) => {
         container.querySelector(`#${id}`)
       );
       referencedElements.forEach(refElement => {
-        expect(refElement).toBeInTheDocument();
+        expect(refElement).toBeTruthy(); // Changed from toBeInTheDocument for build compatibility
       });
     }
 
@@ -88,7 +93,7 @@ export const testAriaAttributes = (container: HTMLElement) => {
         container.querySelector(`#${id}`)
       );
       referencedElements.forEach(refElement => {
-        expect(refElement).toBeInTheDocument();
+        expect(refElement).toBeTruthy(); // Changed from toBeInTheDocument for build compatibility
       });
     }
   });
