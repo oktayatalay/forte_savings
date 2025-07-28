@@ -471,7 +471,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Admin Panel Link */}
-        {user?.role === 'admin' && (
+        {(user?.role === 'admin' || user?.role === 'super_admin' || user?.email?.includes('@fortetourism.com')) && (
           <Card className="border-orange-200 bg-orange-50 dark:bg-orange-900/10">
             <CardHeader>
               <CardTitle className="text-orange-800 dark:text-orange-200">
@@ -482,7 +482,11 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-100">
+              <Button 
+                variant="outline" 
+                className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                onClick={() => router.push('/admin')}
+              >
                 Admin Paneline Git
               </Button>
             </CardContent>

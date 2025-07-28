@@ -110,7 +110,7 @@ export function AuditLogs() {
   const loadAuditLogs = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/audit/logs-basic.php', {
+      const response = await fetch('/api/admin/audit/logs-final.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
