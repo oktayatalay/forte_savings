@@ -3,8 +3,9 @@ require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../config/mail.php';
 
-// Apply comprehensive security for password reset
-SecurityMiddleware::setupAuth();
+// Apply comprehensive security for password reset - disable CSRF
+SecurityMiddleware::init(['enable_csrf' => false]);
+SecurityMiddleware::apply('auth', ['allowed_methods' => ['POST', 'OPTIONS']]);
 
 // Validate input
 $input = json_decode(file_get_contents('php://input'), true);

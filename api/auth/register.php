@@ -3,8 +3,9 @@ require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../config/mail.php';
 
-// Apply comprehensive security for registration
-SecurityMiddleware::setupAuth();
+// Apply comprehensive security for registration - disable CSRF
+SecurityMiddleware::init(['enable_csrf' => false]);
+SecurityMiddleware::apply('auth', ['allowed_methods' => ['POST', 'OPTIONS']]);
 
 // Additional rate limiting for registration
 RateLimiter::checkRegistrationLimit();

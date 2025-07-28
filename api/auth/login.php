@@ -2,8 +2,9 @@
 require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 
-// Apply comprehensive security
-SecurityMiddleware::setupAuth();
+// Apply comprehensive security - disable CSRF for login
+SecurityMiddleware::init(['enable_csrf' => false]);
+SecurityMiddleware::apply('auth', ['allowed_methods' => ['POST', 'OPTIONS']]);
 
 // Validate input with enhanced security
 $input = json_decode(file_get_contents('php://input'), true);
