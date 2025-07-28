@@ -5,9 +5,9 @@ require_once '../../config/database.php';
 require_once '../../security/SecurityMiddleware.php';
 
 // Initialize security middleware
-$security = new SecurityMiddleware();
-$security->authenticate();
-$security->requireAdminRole();
+SecurityMiddleware::init();
+SecurityMiddleware::apply('admin', ['allowed_methods' => ['PUT', 'OPTIONS']]);
+$user = SecurityMiddleware::authenticate(['admin', 'super_admin']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
     http_response_code(405);
@@ -247,10 +247,7 @@ try {
     }
     
 } catch (Exception $e) {
-    $security->logError('admin_user_update_error', $e->getMessage(), [
-        'user_id' => $userId,
-        'update_data' => array_keys($updateData ?? [])
-    ]);
+    error_log('Admin user update error: ' . $e->getMessage());
     
     http_response_code(500);
     echo json_encode([

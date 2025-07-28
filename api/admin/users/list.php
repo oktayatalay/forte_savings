@@ -5,9 +5,9 @@ require_once '../../config/database.php';
 require_once '../../security/SecurityMiddleware.php';
 
 // Initialize security middleware
-$security = new SecurityMiddleware();
-$security->authenticate();
-$security->requireAdminRole();
+SecurityMiddleware::init();
+SecurityMiddleware::apply('admin', ['allowed_methods' => ['GET', 'OPTIONS']]);
+$user = SecurityMiddleware::authenticate(['admin', 'super_admin']);
 
 // Get request parameters
 $page = filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT) ?: 1;
@@ -143,11 +143,7 @@ try {
     ]);
     
 } catch (Exception $e) {
-    $security->logError('admin_users_list_error', $e->getMessage(), [
-        'page' => $page,
-        'limit' => $limit,
-        'search' => $search
-    ]);
+    error_log('Admin users list error: ' . $e->getMessage());
     
     http_response_code(500);
     echo json_encode([

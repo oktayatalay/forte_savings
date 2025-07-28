@@ -5,9 +5,9 @@ require_once '../../config/database.php';
 require_once '../../security/SecurityMiddleware.php';
 
 // Initialize security middleware
-$security = new SecurityMiddleware();
-$security->authenticate();
-$security->requireAdminRole();
+SecurityMiddleware::init();
+SecurityMiddleware::apply('admin', ['allowed_methods' => ['GET', 'OPTIONS']]);
+$user = SecurityMiddleware::authenticate(['admin', 'super_admin']);
 
 try {
     $pdo = getDbConnection();
@@ -247,7 +247,7 @@ try {
     echo json_encode($response);
     
 } catch (Exception $e) {
-    $security->logError('admin_dashboard_error', $e->getMessage());
+    error_log('Admin dashboard error: ' . $e->getMessage());
     
     http_response_code(500);
     echo json_encode([
