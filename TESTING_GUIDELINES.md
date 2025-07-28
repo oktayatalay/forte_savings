@@ -286,7 +286,7 @@ it('should not have accessibility violations', async () => {
 ### Comprehensive Accessibility Testing
 
 ```typescript
-import { runAccessibilityTestSuite } from '@/src/__tests__/utils/accessibility-utils';
+import { runAccessibilityTestSuite } from '@/lib/test-utils/accessibility-utils';
 
 it('should pass comprehensive accessibility tests', async () => {
   const renderResult = render(<ComplexComponent />);

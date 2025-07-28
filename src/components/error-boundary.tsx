@@ -192,7 +192,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       
       // Send to error monitoring service
       // errorMonitoringService.captureException(errorData);
-      console.log('Error logged:', errorData);
+      if (process.env.NODE_ENV !== 'test') {
+        console.log('Error logged:', errorData);
+      }
     } catch (loggingError) {
       console.error('Failed to log error:', loggingError);
     }
