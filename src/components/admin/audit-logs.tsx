@@ -86,9 +86,9 @@ interface AuditFilters {
 }
 
 export function AuditLogs() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(fallbackLogs);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>(fallbackLogs);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'audit' | 'security' | 'monitoring'>('audit');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
@@ -107,7 +107,7 @@ export function AuditLogs() {
   });
 
   // Fallback audit logs data
-  const fallbackLogs = [
+  const fallbackLogs: AuditLog[] = [
     {
       id: 1,
       timestamp: new Date().toISOString(),
@@ -214,88 +214,125 @@ export function AuditLogs() {
     loadAuditLogs();
   }, []);
 
-  // Table columns
+  // Table columns with null-safe rendering
   const columns = [
     {
       key: 'timestamp',
       header: 'Zaman',
       label: 'Zaman',
-      render: (log: AuditLog) => (
-        <div className="text-sm">
-          <div>{new Date(log.timestamp).toLocaleDateString('tr-TR')}</div>
-          <div className="text-muted-foreground">
-            {new Date(log.timestamp).toLocaleTimeString('tr-TR')}
+      render: (log: AuditLog | null | undefined) => {
+        if (!log || !log.timestamp) {
+          return (
+            <div className="text-sm">
+              <div>-</div>
+              <div className="text-muted-foreground">-</div>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="text-sm">
+            <div>{new Date(log.timestamp).toLocaleDateString('tr-TR')}</div>
+            <div className="text-muted-foreground">
+              {new Date(log.timestamp).toLocaleTimeString('tr-TR')}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'user',
       header: 'Kullanıcı',
       label: 'Kullanıcı',
-      render: (log: AuditLog) => (
-        <div>
-          <div className="text-sm font-medium">{log.user_name}</div>
-          <div className="text-xs text-muted-foreground">{log.user_email}</div>
-        </div>
-      ),
+      render: (log: AuditLog | null | undefined) => {
+        if (!log) {
+          return (
+            <div>
+              <div className="text-sm font-medium">Bilinmiyor</div>
+              <div className="text-xs text-muted-foreground">-</div>
+            </div>
+          );
+        }
+        
+        return (
+          <div>
+            <div className="text-sm font-medium">{log.user_name || 'Bilinmiyor'}</div>
+            <div className="text-xs text-muted-foreground">{log.user_email || '-'}</div>
+          </div>
+        );
+      },
     },
     {
       key: 'action',
       header: 'Eylem',
       label: 'Eylem',
-      render: (log: AuditLog) => (
-        <Badge variant={
-          log.action_type === 'delete' ? 'destructive' :
-          log.action_type === 'create' ? 'default' :
-          log.action_type === 'update' ? 'secondary' :
-          'outline'
-        }>
-          {log.action_type === 'login' ? 'Giriş' :
-           log.action_type === 'logout' ? 'Çıkış' :
-           log.action_type === 'create' ? 'Oluştur' :
-           log.action_type === 'update' ? 'Güncelle' :
-           log.action_type === 'delete' ? 'Sil' :
-           log.action_type === 'view' ? 'Görüntüle' :
-           log.action_type === 'export' ? 'Dışa Aktar' :
-           log.action_type}
-        </Badge>
-      ),
+      render: (log: AuditLog | null | undefined) => {
+        if (!log || !log.action_type) {
+          return <Badge variant="outline">Bilinmiyor</Badge>;
+        }
+        
+        return (
+          <Badge variant={
+            log.action_type === 'delete' ? 'destructive' :
+            log.action_type === 'create' ? 'default' :
+            log.action_type === 'update' ? 'secondary' :
+            'outline'
+          }>
+            {log.action_type === 'login' ? 'Giriş' :
+             log.action_type === 'logout' ? 'Çıkış' :
+             log.action_type === 'create' ? 'Oluştur' :
+             log.action_type === 'update' ? 'Güncelle' :
+             log.action_type === 'delete' ? 'Sil' :
+             log.action_type === 'view' ? 'Görüntüle' :
+             log.action_type === 'export' ? 'Dışa Aktar' :
+             log.action_type}
+          </Badge>
+        );
+      },
     },
     {
       key: 'description',
       header: 'Açıklama',
       label: 'Açıklama',
-      render: (log: AuditLog) => (
-        <div className="text-sm max-w-xs truncate" title={log.description}>
-          {log.description}
-        </div>
-      ),
+      render: (log: AuditLog | null | undefined) => {
+        const description = log?.description || 'Açıklama yok';
+        return (
+          <div className="text-sm max-w-xs truncate" title={description}>
+            {description}
+          </div>
+        );
+      },
     },
     {
       key: 'risk',
       header: 'Risk',
       label: 'Risk',
-      render: (log: AuditLog) => (
-        <Badge variant={
-          log.risk_level === 'critical' ? 'destructive' :
-          log.risk_level === 'high' ? 'destructive' :
-          log.risk_level === 'medium' ? 'secondary' :
-          'outline'
-        }>
-          {log.risk_level === 'critical' ? 'Kritik' :
-           log.risk_level === 'high' ? 'Yüksek' :
-           log.risk_level === 'medium' ? 'Orta' :
-           'Düşük'}
-        </Badge>
-      ),
+      render: (log: AuditLog | null | undefined) => {
+        if (!log || !log.risk_level) {
+          return <Badge variant="outline">Bilinmiyor</Badge>;
+        }
+        
+        return (
+          <Badge variant={
+            log.risk_level === 'critical' ? 'destructive' :
+            log.risk_level === 'high' ? 'destructive' :
+            log.risk_level === 'medium' ? 'secondary' :
+            'outline'
+          }>
+            {log.risk_level === 'critical' ? 'Kritik' :
+             log.risk_level === 'high' ? 'Yüksek' :
+             log.risk_level === 'medium' ? 'Orta' :
+             'Düşük'}
+          </Badge>
+        );
+      },
     },
     {
       key: 'ip',
       header: 'IP',
       label: 'IP',
-      render: (log: AuditLog) => (
-        <span className="text-sm font-mono">{log.ip_address}</span>
+      render: (log: AuditLog | null | undefined) => (
+        <span className="text-sm font-mono">{log?.ip_address || '0.0.0.0'}</span>
       ),
     }
   ];

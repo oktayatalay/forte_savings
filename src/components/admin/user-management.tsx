@@ -40,14 +40,7 @@ interface ExtendedUser {
 }
 
 export function UserManagement() {
-  const [users, setUsers] = useState<ExtendedUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-
-  const { canManageUsers, canDeleteUsers, canManageRoles } = useAdminAuth();
-
-  // Fallback user data - always works
+  // Initialize with fallback data immediately to prevent undefined errors
   const fallbackUsers: ExtendedUser[] = [
     {
       id: 1,
@@ -114,6 +107,14 @@ export function UserManagement() {
     }
   ];
 
+  const [users, setUsers] = useState<ExtendedUser[]>(fallbackUsers);
+  const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>(fallbackUsers);
+  const [loading, setLoading] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+
+  const { canManageUsers, canDeleteUsers, canManageRoles } = useAdminAuth();
+
+
   // Load users from API with fallback
   const loadUsers = async () => {
     setLoading(true);
@@ -135,8 +136,20 @@ export function UserManagement() {
 
       const result = await response.json();
       
-      if (result.success && result.data) {
-        const safeUsers = result.data.map((user: any) => ({
+      if (result.success && result.data && Array.isArray(result.data) && result.data.length > 0) {
+        // Additional safety check: ensure every user has required properties
+        const validUsers = result.data.filter((user: any) => 
+          user && typeof user === 'object' && user.first_name && user.last_name
+        );
+        
+        if (validUsers.length === 0) {
+          console.warn('API returned empty/invalid user data, using fallback');
+          setUsers(fallbackUsers);
+          setFilteredUsers(fallbackUsers);
+          return;
+        }
+        
+        const safeUsers = validUsers.map((user: any) => ({
           id: user.id || 0,
           email: user.email || '',
           first_name: user.first_name || 'N/A',
@@ -162,7 +175,7 @@ export function UserManagement() {
         setUsers(safeUsers);
         setFilteredUsers(safeUsers);
       } else {
-        console.warn('API returned invalid data, using fallback');
+        console.warn('API returned invalid data structure, using fallback');
         setUsers(fallbackUsers);
         setFilteredUsers(fallbackUsers);
       }
@@ -179,72 +192,130 @@ export function UserManagement() {
     loadUsers();
   }, []);
 
-  // Table columns
+  // Table columns with aggressive null-safe rendering
   const columns = [
     {
       key: 'user',
       header: 'Kullanıcı',
       label: 'Kullanıcı',
-      render: (user: ExtendedUser) => (
-        <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary">
-                {user.first_name?.[0]}{user.last_name?.[0]}
-              </span>
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return (
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary">?</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-foreground">Bilinmiyor</div>
+                <div className="text-sm text-muted-foreground">-</div>
+              </div>
+            </div>
+          );
+        }
+        
+        const firstName = user.first_name || 'N/A';
+        const lastName = user.last_name || '';
+        const email = user.email || 'email@example.com';
+        
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-primary">
+                  {firstName[0] || '?'}{lastName[0] || ''}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-foreground">
+                {firstName} {lastName}
+              </div>
+              <div className="text-sm text-muted-foreground">{email}</div>
             </div>
           </div>
-          <div>
-            <div className="text-sm font-medium text-foreground">
-              {user.first_name} {user.last_name}
-            </div>
-            <div className="text-sm text-muted-foreground">{user.email}</div>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'role',
       header: 'Rol',
       label: 'Rol',
-      render: (user: ExtendedUser) => (
-        <Badge variant={user.role === 'admin' || user.role === 'super_admin' ? 'default' : 'secondary'}>
-          {user.role === 'super_admin' ? 'Süper Admin' : 
-           user.role === 'admin' ? 'Admin' : 'Kullanıcı'}
-        </Badge>
-      ),
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return <Badge variant="secondary">Bilinmiyor</Badge>;
+        }
+        
+        const role = user.role || 'user';
+        return (
+          <Badge variant={role === 'admin' || role === 'super_admin' ? 'default' : 'secondary'}>
+            {role === 'super_admin' ? 'Süper Admin' : 
+             role === 'admin' ? 'Admin' : 'Kullanıcı'}
+          </Badge>
+        );
+      },
     },
     {
       key: 'department',
       header: 'Departman',
       label: 'Departman',
-      render: (user: ExtendedUser) => (
-        <div>
-          <div className="text-sm text-foreground">{user.department}</div>
-          <div className="text-xs text-muted-foreground">{user.position}</div>
-        </div>
-      ),
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return (
+            <div>
+              <div className="text-sm text-foreground">-</div>
+              <div className="text-xs text-muted-foreground">-</div>
+            </div>
+          );
+        }
+        
+        return (
+          <div>
+            <div className="text-sm text-foreground">{user.department || 'N/A'}</div>
+            <div className="text-xs text-muted-foreground">{user.position || 'N/A'}</div>
+          </div>
+        );
+      },
     },
     {
       key: 'status',
       header: 'Durum',
       label: 'Durum',
-      render: (user: ExtendedUser) => (
-        <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-          {user.status === 'active' ? 'Aktif' : 'Pasif'}
-        </Badge>
-      ),
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return <Badge variant="secondary">Bilinmiyor</Badge>;
+        }
+        
+        const status = user.status || 'active';
+        return (
+          <Badge variant={status === 'active' ? 'default' : 'destructive'}>
+            {status === 'active' ? 'Aktif' : 'Pasif'}
+          </Badge>
+        );
+      },
     },
     {
       key: 'stats',
       header: 'İstatistikler',
       label: 'İstatistikler',
-      render: (user: ExtendedUser) => (
-        <div className="text-sm">
-          <div>{user.project_count} proje</div>
-          <div className="text-muted-foreground">{user.last_activity}</div>
-        </div>
-      ),
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return (
+            <div className="text-sm">
+              <div>0 proje</div>
+              <div className="text-muted-foreground">Bilinmiyor</div>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="text-sm">
+            <div>{user.project_count || 0} proje</div>
+            <div className="text-muted-foreground">{user.last_activity || 'Bilinmiyor'}</div>
+          </div>
+        );
+      },
     }
   ];
 
