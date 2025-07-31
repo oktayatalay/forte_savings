@@ -86,27 +86,7 @@ interface AuditFilters {
 }
 
 export function AuditLogs() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(fallbackLogs);
-  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
-  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>(fallbackLogs);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'audit' | 'security' | 'monitoring'>('audit');
-  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  
-  const [filters, setFilters] = useState<AuditFilters>({
-    search: '',
-    user: '',
-    action_type: '',
-    resource_type: '',
-    status: '',
-    risk_level: '',
-    date_from: '',
-    date_to: '',
-    ip_address: ''
-  });
-
-  // Fallback audit logs data
+  // Fallback audit logs data - must be declared before useState
   const fallbackLogs: AuditLog[] = [
     {
       id: 1,
@@ -147,6 +127,26 @@ export function AuditLogs() {
       session_id: 'sess_456'
     }
   ];
+
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(fallbackLogs);
+  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<AuditLog[]>(fallbackLogs);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'audit' | 'security' | 'monitoring'>('audit');
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  
+  const [filters, setFilters] = useState<AuditFilters>({
+    search: '',
+    user: '',
+    action_type: '',
+    resource_type: '',
+    status: '',
+    risk_level: '',
+    date_from: '',
+    date_to: '',
+    ip_address: ''
+  });
 
   // Load audit logs from API
   const loadAuditLogs = async () => {
