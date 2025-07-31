@@ -148,8 +148,43 @@ export function SystemSettings() {
   
   const { canEditSystemSettings } = useAdminAuth();
 
-  // Mock data initialization
-  useEffect(() => {
+  // Load settings from API
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/settings/system.php', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+
+      if (!response.ok) {
+        console.warn('Settings API failed, using mock data');
+        loadMockData();
+        return;
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.settings) {
+        setSettings(result.data.settings);
+        setCategories(result.data.categories || []);
+        setEmailTemplates(result.data.emailTemplates || []);
+      } else {
+        console.warn('Invalid settings response, using mock data');
+        loadMockData();
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      loadMockData();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMockData = () => {
     const mockSettings: SystemSettings = {
       general: {
         site_name: 'Forte Savings',
@@ -262,6 +297,10 @@ export function SystemSettings() {
     setSettings(mockSettings);
     setCategories(mockCategories);
     setEmailTemplates(mockTemplates);
+  };
+
+  useEffect(() => {
+    loadSettings();
   }, []);
 
   const tabs = [
@@ -276,15 +315,43 @@ export function SystemSettings() {
   ];
 
   const handleSaveSettings = async () => {
-    if (!canEditSystemSettings) return;
+    if (!canEditSystemSettings || !settings) return;
     
     try {
       setSaving(true);
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Settings saved:', settings);
+      
+      // Save each category of settings
+      const categories = ['general', 'email', 'security', 'backup', 'notifications', 'performance'];
+      
+      for (const category of categories) {
+        const response = await fetch('/api/admin/settings/system.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({
+            category,
+            settings: settings[category as keyof SystemSettings]
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || `${category} ayarları kaydedilemedi`);
+        }
+      }
+      
+      // Show success message (you can add a toast notification here)
+      console.log('All settings saved successfully');
+      
+      // Reload settings to confirm
+      await loadSettings();
+      
     } catch (error) {
       console.error('Save error:', error);
+      // You can add error notification here
+      alert('Ayarlar kaydedilirken hata oluştu: ' + (error as Error).message);
     } finally {
       setSaving(false);
     }

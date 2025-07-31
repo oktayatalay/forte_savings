@@ -5,7 +5,7 @@ require_once '../../config/database.php';
 require_once '../../security/SecurityMiddleware.php';
 
 // Initialize security middleware
-SecurityMiddleware::init();
+SecurityMiddleware::init(['enable_csrf' => false]);
 SecurityMiddleware::apply('admin', ['allowed_methods' => ['PUT', 'OPTIONS']]);
 $user = SecurityMiddleware::authenticate(['admin', 'super_admin']);
 

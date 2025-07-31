@@ -11,9 +11,19 @@ import {
   Search,
   Filter,
   Download,
+  Edit3,
+  Trash2,
+  Save,
+  X,
 } from 'lucide-react';
 import { EnhancedDataTable } from '@/components/enhanced-data-table';
 import { useAdminAuth } from './admin-auth';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 // User interfaces
 interface ExtendedUser {
@@ -111,6 +121,10 @@ export function UserManagement() {
   const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>(fallbackUsers);
   const [loading, setLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<ExtendedUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<ExtendedUser | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const { canManageUsers, canDeleteUsers, canManageRoles } = useAdminAuth();
 
@@ -191,6 +205,102 @@ export function UserManagement() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // CRUD Functions
+  const handleCreateUser = async (userData: Partial<ExtendedUser>) => {
+    if (!canManageUsers) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/admin/users/create.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        await loadUsers(); // Reload users
+        setUserDialogOpen(false);
+        setEditingUser(null);
+      } else {
+        alert('Kullanıcı oluşturulamadı: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Create user error:', error);
+      alert('Kullanıcı oluşturulurken hata oluştu');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateUser = async (userData: Partial<ExtendedUser>) => {
+    if (!canManageUsers || !editingUser) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/admin/users/update.php', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ ...userData, id: editingUser.id })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        await loadUsers(); // Reload users
+        setUserDialogOpen(false);
+        setEditingUser(null);
+      } else {
+        alert('Kullanıcı güncellenemedi: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Update user error:', error);
+      alert('Kullanıcı güncellenirken hata oluştu');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: ExtendedUser) => {
+    if (!canDeleteUsers) return;
+    
+    setSaving(true);
+    try {
+      const response = await fetch('/api/admin/users/delete.php', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ 
+          id: user.id,
+          action: 'deactivate' // Safe delete - just deactivate
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        await loadUsers(); // Reload users
+        setDeletingUser(null);
+      } else {
+        alert('Kullanıcı silinemedi: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Delete user error:', error);
+      alert('Kullanıcı silinirken hata oluştu');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Table columns with aggressive null-safe rendering
   const columns = [
@@ -316,6 +426,43 @@ export function UserManagement() {
           </div>
         );
       },
+    },
+    {
+      key: 'actions',
+      header: 'İşlemler',
+      label: 'İşlemler',
+      render: (user: ExtendedUser | null | undefined) => {
+        if (!user || typeof user !== 'object') {
+          return <div>-</div>;
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            {canManageUsers && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEditingUser(user);
+                  setUserDialogOpen(true);
+                }}
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
+            )}
+            {canDeleteUsers && user.role !== 'super_admin' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeletingUser(user)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        );
+      },
     }
   ];
 
@@ -362,7 +509,13 @@ export function UserManagement() {
                 Dışa Aktar
               </Button>
               {canManageUsers && (
-                <Button size="sm">
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    setEditingUser(null);
+                    setUserDialogOpen(true);
+                  }}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Yeni Kullanıcı
                 </Button>
@@ -379,6 +532,187 @@ export function UserManagement() {
           />
         </CardContent>
       </Card>
+
+      {/* User Create/Edit Dialog */}
+      <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Oluştur'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser ? 'Kullanıcı bilgilerini güncelleyin.' : 'Yeni kullanıcı hesabı oluşturun.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <UserForm
+            user={editingUser}
+            onSave={editingUser ? handleUpdateUser : handleCreateUser}
+            onCancel={() => {
+              setUserDialogOpen(false);
+              setEditingUser(null);
+            }}
+            saving={saving}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kullanıcıyı Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deletingUser?.first_name} {deletingUser?.last_name}</strong> kullanıcısını silmek istediğinizden emin misiniz?
+              Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingUser && handleDeleteUser(deletingUser)}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {saving ? 'Siliniyor...' : 'Sil'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+// User Form Component
+interface UserFormProps {
+  user: ExtendedUser | null;
+  onSave: (userData: Partial<ExtendedUser>) => void;
+  onCancel: () => void;
+  saving: boolean;
+}
+
+function UserForm({ user, onSave, onCancel, saving }: UserFormProps) {
+  const [formData, setFormData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    department: user?.department || '',
+    position: user?.position || '',
+    role: user?.role || 'user',
+    status: user?.status || 'active'
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="first_name">Ad</Label>
+          <Input
+            id="first_name"
+            value={formData.first_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="last_name">Soyad</Label>
+          <Input
+            id="last_name"
+            value={formData.last_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="email">E-posta</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="phone">Telefon</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="department">Departman</Label>
+          <Input
+            id="department"
+            value={formData.department}
+            onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="position">Pozisyon</Label>
+          <Input
+            id="position"
+            value={formData.position}
+            onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+          />
+        </div>
+        <div>
+          <Label htmlFor="role">Rol</Label>
+          <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">Kullanıcı</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="super_admin">Süper Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="status">Durum</Label>
+        <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Pasif</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          İptal
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? (
+            <>Kaydediliyor...</>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              {user ? 'Güncelle' : 'Oluştur'}
+            </>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

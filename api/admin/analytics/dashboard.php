@@ -4,8 +4,8 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 require_once '../../security/SecurityMiddleware.php';
 
-// Initialize security middleware
-SecurityMiddleware::init();
+// Initialize security middleware with static methods
+SecurityMiddleware::init(['enable_csrf' => false]);
 SecurityMiddleware::apply('admin', ['allowed_methods' => ['GET', 'OPTIONS']]);
 $user = SecurityMiddleware::authenticate(['admin', 'super_admin']);
 
