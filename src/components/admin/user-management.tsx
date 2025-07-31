@@ -133,7 +133,7 @@ export function UserManagement() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/users/list-final.php', {
+      const response = await fetch('/api/admin/users/list-real.php', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
