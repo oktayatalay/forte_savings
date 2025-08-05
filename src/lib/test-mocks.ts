@@ -96,7 +96,7 @@ export const handlers = [
   }),
 
   // Auth endpoints
-  http.post('/api/auth/login', async ({ request }) => {
+  http.post('/api/auth/login.php', async ({ request }) => {
     const body = await request.json() as Record<string, any>
     const { email, password } = body as { email: string; password: string }
     
@@ -117,7 +117,7 @@ export const handlers = [
     return HttpResponse.json(mockApiResponses.error('Invalid credentials'), { status: 401 })
   }),
 
-  http.post('/api/auth/register', async ({ request }) => {
+  http.post('/api/auth/register.php', async ({ request }) => {
     const body = await request.json() as Record<string, any>
     return HttpResponse.json(mockApiResponses.success({
       user: {
