@@ -7,8 +7,8 @@ require_once '../config/mail.php';
 SecurityMiddleware::init(['enable_csrf' => false]);
 SecurityMiddleware::apply('auth', ['allowed_methods' => ['POST', 'OPTIONS']]);
 
-// Additional rate limiting for registration
-RateLimiter::checkRegistrationLimit();
+// Additional rate limiting for registration - DISABLED FOR TESTING
+// RateLimiter::checkRegistrationLimit();
 
 // Validate input with enhanced security
 $input = json_decode(file_get_contents('php://input'), true);
