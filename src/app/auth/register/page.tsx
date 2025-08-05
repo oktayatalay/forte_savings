@@ -64,7 +64,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/register.php', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export default function RegisterPage() {
           setVerificationToken(data.verification_token);
         }
       } else {
-        setError(data.error || 'Kayıt başarısız');
+        setError(data.message || data.error || 'Kayıt başarısız');
       }
     } catch (err) {
       setError('Bağlantı hatası. Lütfen tekrar deneyin.');

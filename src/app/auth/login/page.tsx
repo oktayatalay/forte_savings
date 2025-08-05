@@ -25,7 +25,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login.php', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,13 +38,15 @@ export default function LoginPage() {
       if (response.ok) {
         // Token'ları localStorage'a kaydet
         localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('refresh_token', data.refresh_token);
+        if (data.refresh_token) {
+          localStorage.setItem('refresh_token', data.refresh_token);
+        }
         localStorage.setItem('user', JSON.stringify(data.user));
         
         // Dashboard'a yönlendir
         router.push('/dashboard');
       } else {
-        setError(data.error || 'Giriş başarısız');
+        setError(data.message || data.error || 'Giriş başarısız');
       }
     } catch (err) {
       setError('Bağlantı hatası. Lütfen tekrar deneyin.');
