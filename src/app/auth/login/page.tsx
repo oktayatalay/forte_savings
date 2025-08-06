@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,9 @@ import { Loader2, Eye, EyeOff, Building2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { AuthErrorBoundary } from '@/components/auth-error-boundary';
+import { safeLocalStorage, validationUtils, retryUtils, performanceUtils } from '@/lib/client-utils';
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,59 +23,134 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
+  // Hydration-safe mount effect
   useEffect(() => {
     setMounted(true);
+    
+    // Check for existing auth on mount (client-side only)
+    const existingToken = safeLocalStorage.getItem('auth_token');
+    if (existingToken) {
+      // Redirect if already authenticated
+      router.push('/dashboard');
+    }
+  }, [router]);
+
+  // Enhanced error handling with better user feedback
+  const handleError = useCallback((error: unknown, defaultMessage: string) => {
+    console.error('Login error:', error);
+    
+    if (error instanceof Error) {
+      setError(error.message.includes('Failed to fetch') 
+        ? 'Sunucu bağlantısı kurulamadı. İnternet bağlantınızı kontrol edin.' 
+        : defaultMessage);
+    } else {
+      setError(defaultMessage);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mounted) return; // Prevent submission before hydration
+    
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        setError('Sunucu yanıt hatası. Lütfen tekrar deneyin.');
+      // Enhanced input validation
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+      
+      if (!trimmedEmail || !trimmedPassword) {
+        setError('E-posta ve şifre alanları zorunludur');
+        return;
+      }
+      
+      if (!validationUtils.isValidEmail(trimmedEmail)) {
+        setError('Geçerli bir e-posta adresi girin');
         return;
       }
 
-      if (response.ok) {
-        // Token'ları localStorage'a kaydet
-        localStorage.setItem('auth_token', data.token);
-        if (data.refresh_token) {
-          localStorage.setItem('refresh_token', data.refresh_token);
+      // Use retry mechanism for network reliability
+      const response = await retryUtils.withRetry(async () => {
+        return fetch('/api/auth/login.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ 
+            email: validationUtils.sanitizeInput(trimmedEmail), 
+            password: trimmedPassword 
+          }),
+        });
+      }, 2, 1000);
+
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(errorData.message || errorData.error || `Sunucu hatası (${response.status})`);
+        } catch {
+          setError(`Sunucu hatası (${response.status}). Lütfen tekrar deneyin.`);
         }
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Dashboard'a yönlendir
-        router.push('/dashboard');
-      } else {
-        setError(data.message || data.error || 'Giriş başarısız');
+        return;
       }
+
+      let data;
+      try {
+        const responseText = await response.text();
+        if (!responseText.trim()) {
+          setError('Sunucudan boş yanıt alındı. Lütfen tekrar deneyin.');
+          return;
+        }
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setError('Sunucu yanıt formatı hatalı. Lütfen tekrar deneyin.');
+        return;
+      }
+
+      // Validate response data
+      if (!data.token || !data.user) {
+        setError('Geçersiz sunucu yanıtı. Lütfen tekrar deneyin.');
+        return;
+      }
+
+      // Success - store auth data safely
+      safeLocalStorage.setItem('auth_token', data.token);
+      if (data.refresh_token) {
+        safeLocalStorage.setItem('refresh_token', data.refresh_token);
+      }
+      safeLocalStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Redirect with a small delay to ensure storage is complete
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+      
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Bağlantı hatası. Lütfen tekrar deneyin.');
+      handleError(err, 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Prevent hydration mismatch by showing consistent loading state
   if (!mounted) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-glow border-border/50 bg-card/80 backdrop-blur-sm">
+          <CardContent className="flex items-center justify-center py-8">
+            <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
+            <span className="text-muted-foreground">Yükleniyor...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  return (
+  const loginContent = (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -181,7 +259,8 @@ export default function LoginPage() {
           
           <div className="mt-8 text-center space-y-3">
             <Link 
-              href="/auth/forgot-password" 
+              href="/auth/forgot-password"
+              prefetch={false}
               className="inline-block text-sm text-muted-foreground hover:text-primary transition-colors duration-200 hover:underline"
             >
               Şifremi unuttum
@@ -197,7 +276,8 @@ export default function LoginPage() {
             <div className="text-sm text-muted-foreground">
               Hesabınız yok mu?{' '}
               <Link 
-                href="/auth/register" 
+                href="/auth/register"
+                prefetch={false}
                 className="font-medium text-primary hover:text-primary/80 transition-colors duration-200 hover:underline"
               >
                 Kayıt olun
@@ -207,5 +287,11 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+
+  return (
+    <AuthErrorBoundary>
+      {loginContent}
+    </AuthErrorBoundary>
   );
 }

@@ -112,21 +112,19 @@ class SecureErrorHandler {
         
         $response = [
             'success' => false,
-            'error' => [
-                'code' => $code,
-                'message' => self::sanitizeErrorMessage($message),
-                'timestamp' => date('c')
-            ]
+            'error' => $code,
+            'message' => self::sanitizeErrorMessage($message),
+            'timestamp' => date('c')
         ];
         
         // Add additional data if provided
         if (!empty($data)) {
-            $response['error']['data'] = self::sanitizeErrorData($data);
+            $response = array_merge($response, self::sanitizeErrorData($data));
         }
         
         // Add debug info only in development
         if (!self::isProduction() && isset($data['debug'])) {
-            $response['error']['debug'] = $data['debug'];
+            $response['debug'] = $data['debug'];
         }
         
         echo json_encode($response, JSON_UNESCAPED_SLASHES);

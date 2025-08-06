@@ -14,7 +14,7 @@ class Database {
         }
         
         $this->host = $this->getEnvVar('DB_HOST', 'localhost');
-        $this->db_name = $this->getEnvVar('DB_NAME', 'forte_savings');
+        $this->db_name = $this->getEnvVar('DB_NAME', 'fortetou_savings');
         $this->username = $this->getEnvVar('DB_USER', 'root');
         $this->password = $this->getEnvVar('DB_PASS', '');
     }

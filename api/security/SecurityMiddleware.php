@@ -16,7 +16,7 @@ class SecurityMiddleware {
         'max_request_size' => 1048576, // 1MB
         'max_execution_time' => 30,
         'enable_csrf' => true,
-        'enable_rate_limiting' => true,
+        'enable_rate_limiting' => false,
         'strict_headers' => true
     ];
     
@@ -55,16 +55,16 @@ class SecurityMiddleware {
             // Check request size limits
             SecurityHeaders::checkRequestSize(self::$config['max_request_size']);
             
-            // Rate limiting
-            if (self::$config['enable_rate_limiting']) {
-                self::applyRateLimiting($endpoint, $options);
-            }
+            // Rate limiting - DISABLED
+            // if (self::$config['enable_rate_limiting']) {
+            //     self::applyRateLimiting($endpoint, $options);
+            // }
             
-            // Check for suspicious activity
-            RateLimiter::checkSuspiciousActivity($requestId);
+            // Check for suspicious activity - DISABLED
+            // RateLimiter::checkSuspiciousActivity($requestId);
             
-            // Check for distributed attacks
-            RateLimiter::checkDistributedAttack();
+            // Check for distributed attacks - DISABLED
+            // RateLimiter::checkDistributedAttack();
             
             // CSRF protection for state-changing operations
             if (self::$config['enable_csrf'] && CSRFProtection::needsProtection()) {

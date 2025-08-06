@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,9 +15,17 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [resetToken, setResetToken] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  // Hydration-safe mount effect
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mounted) return; // Prevent submission before hydration
+    
     setLoading(true);
     setError('');
 
@@ -50,6 +58,20 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-8">
+            <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
+            <span className="text-muted-foreground">Yükleniyor...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -87,12 +109,12 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Link href="/auth/reset-password">
+              <Link href="/auth/reset-password" prefetch={false}>
                 <Button className="w-full">
                   Şifre Sıfırlama Sayfası
                 </Button>
               </Link>
-              <Link href="/auth/login">
+              <Link href="/auth/login" prefetch={false}>
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Giriş Sayfasına Dön
@@ -155,7 +177,8 @@ export default function ForgotPasswordPage() {
           
           <div className="mt-6 text-center">
             <Link 
-              href="/auth/login" 
+              href="/auth/login"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-primary inline-flex items-center"
             >
               <ArrowLeft className="mr-1 h-3 w-3" />

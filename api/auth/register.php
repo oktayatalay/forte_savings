@@ -51,8 +51,8 @@ try {
         SecureErrorHandler::sendErrorResponse('EMAIL_EXISTS', 'Email address is already registered', [], 400);
     }
     
-    // Şifreyi hash'le
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+    // Şifreyi hash'le - bcrypt ile uyumlu format
+    $password_hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
     
     // Email verification token oluştur
     $verification_token = bin2hex(random_bytes(32));
@@ -89,9 +89,11 @@ try {
     $mailService = new MailService();
     $emailSent = $mailService->sendVerificationEmail($email, $first_name, $verification_token);
     
-    // Başarılı yanıt
+    // Başarılı yanıt - Frontend uyumlu format
     http_response_code(201);
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode([
+        'success' => true,
         'message' => 'User registered successfully',
         'user_id' => $user_id,
         'email' => $email,

@@ -114,7 +114,7 @@ function ResetPasswordContent() {
             <p className="text-sm text-muted-foreground mb-4">
               Yeni şifrenizle giriş yapabilirsiniz. 3 saniye sonra giriş sayfasına yönlendirileceksiniz.
             </p>
-            <Link href="/auth/login">
+            <Link href="/auth/login" prefetch={false}>
               <Button className="w-full">
                 Hemen Giriş Yap
               </Button>
@@ -233,7 +233,8 @@ function ResetPasswordContent() {
           
           <div className="mt-6 text-center">
             <Link 
-              href="/auth/login" 
+              href="/auth/login"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-primary inline-flex items-center"
             >
               <ArrowLeft className="mr-1 h-3 w-3" />

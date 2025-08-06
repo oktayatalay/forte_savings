@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { AuthErrorBoundary } from '@/components/auth-error-boundary';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,12 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  // Hydration-safe mount effect
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,6 +62,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mounted) return; // Prevent submission before hydration
+    
     setLoading(true);
     setError('');
 
@@ -68,39 +77,72 @@ export default function RegisterPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
         }),
       });
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        setError('Sunucu yanıt hatası. Lütfen tekrar deneyin.');
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorData = JSON.parse(errorText);
+          setError(errorData.message || errorData.error || `Sunucu hatası (${response.status})`);
+        } catch {
+          setError(`Sunucu hatası (${response.status}). Lütfen tekrar deneyin.`);
+        }
         return;
       }
 
-      if (response.ok) {
-        setSuccess(true);
-        if (data.verification_token) {
-          setVerificationToken(data.verification_token);
+      let data;
+      try {
+        const responseText = await response.text();
+        if (!responseText.trim()) {
+          setError('Sunucudan boş yanıt alındı. Lütfen tekrar deneyin.');
+          return;
         }
-      } else {
-        setError(data.message || data.error || 'Kayıt başarısız');
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setError('Sunucu yanıt formatı hatalı. Lütfen tekrar deneyin.');
+        return;
       }
+
+      setSuccess(true);
+      if (data.verification_token) {
+        setVerificationToken(data.verification_token);
+      }
+      
     } catch (err) {
       console.error('Register error:', err);
-      setError('Bağlantı hatası. Lütfen tekrar deneyin.');
+      if (err instanceof Error && err.message.includes('Failed to fetch')) {
+        setError('Sunucu bağlantısı kurulamadı. İnternet bağlantınızı kontrol edin.');
+      } else {
+        setError('Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Prevent hydration mismatch by showing consistent loading state
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-8">
+            <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
+            <span className="text-muted-foreground">Yükleniyor...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -134,7 +176,7 @@ export default function RegisterPage() {
               </div>
             )}
             
-            <Link href="/auth/login">
+            <Link href="/auth/login" prefetch={false}>
               <Button className="w-full">
                 Giriş Sayfasına Dön
               </Button>
@@ -145,7 +187,7 @@ export default function RegisterPage() {
     );
   }
 
-  return (
+  const registerContent = (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
@@ -283,7 +325,7 @@ export default function RegisterPage() {
           <div className="mt-6 text-center">
             <div className="text-sm text-muted-foreground">
               Zaten hesabınız var mı?{' '}
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link href="/auth/login" prefetch={false} className="text-primary hover:underline">
                 Giriş yapın
               </Link>
             </div>
@@ -291,5 +333,11 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  );
+
+  return (
+    <AuthErrorBoundary>
+      {registerContent}
+    </AuthErrorBoundary>
   );
 }

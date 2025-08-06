@@ -72,24 +72,44 @@ function verifyJWT($token) {
 }
 
 function requireAuth($required_roles = null) {
-    // Authorization header'ını al - çoklu yöntem desteği
+    // Authorization header'ını al - improved header detection
     $auth_header = '';
     
-    // Yöntem 1: apache_request_headers() (Apache)
-    if (function_exists('apache_request_headers')) {
+    // Method 1: Standard HTTP_AUTHORIZATION (most reliable)
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    
+    // Method 2: REDIRECT_HTTP_AUTHORIZATION (mod_rewrite)
+    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+    
+    // Method 3: apache_request_headers() (Apache)
+    elseif (function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
         $auth_header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     }
     
-    // Yöntem 2: $_SERVER array'i (nginx, diğer sunucular)
-    if (empty($auth_header)) {
-        // Farklı server değişkenlerini dene
+    // Method 4: getallheaders() (case-insensitive)
+    elseif (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if ($headers) {
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'authorization') {
+                    $auth_header = $value;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Method 5: Manual parsing for edge cases
+    else {
+        // Check other possible server variables
         $possible_headers = [
-            'HTTP_AUTHORIZATION',
-            'REDIRECT_HTTP_AUTHORIZATION', 
             'PHP_AUTH_DIGEST',
-            'PHP_AUTH_USER',
-            'Authorization'
+            'PHP_AUTH_USER'
         ];
         
         foreach ($possible_headers as $header_name) {
@@ -100,55 +120,13 @@ function requireAuth($required_roles = null) {
         }
     }
     
-    // Yöntem 3: PHP input stream'den authorization'ı parse et
-    if (empty($auth_header)) {
-        if (function_exists('getallheaders')) {
-            $headers = getallheaders();
-            if ($headers) {
-                foreach ($headers as $key => $value) {
-                    if (strtolower($key) === 'authorization') {
-                        $auth_header = $value;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Yöntem 4: Manual header parsing
-    if (empty($auth_header)) {
-        // Input stream'den header'ları parse et
-        if (!empty($_SERVER['CONTENT_TYPE']) || !empty($_SERVER['HTTP_AUTHORIZATION'])) {
-            $input = file_get_contents('php://input');
-            if ($input) {
-                // POST data parse et
-                $data = json_decode($input, true);
-                if (isset($data['_headers']['Authorization'])) {
-                    $auth_header = $data['_headers']['Authorization'];
-                }
-            }
-        }
-    }
-    
     if (!$auth_header || !str_starts_with($auth_header, 'Bearer ')) {
         http_response_code(401);
+        header('Content-Type: application/json; charset=UTF-8');
         echo json_encode([
-            'error' => 'Authorization token required',
-            'debug' => [
-                'auth_header_found' => !empty($auth_header),
-                'auth_header_preview' => substr($auth_header, 0, 20) . '...',
-                'server_vars' => [
-                    'HTTP_AUTHORIZATION' => isset($_SERVER['HTTP_AUTHORIZATION']) ? 'exists' : 'missing',
-                    'REDIRECT_HTTP_AUTHORIZATION' => isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) ? 'exists' : 'missing',
-                    'PHP_AUTH_DIGEST' => isset($_SERVER['PHP_AUTH_DIGEST']) ? 'exists' : 'missing',
-                    'Authorization' => isset($_SERVER['Authorization']) ? 'exists' : 'missing'
-                ],
-                'all_server_headers' => array_filter($_SERVER, function($key) {
-                    return strpos($key, 'HTTP_') === 0 || strpos($key, 'AUTH') !== false;
-                }, ARRAY_FILTER_USE_KEY),
-                'apache_headers_function' => function_exists('apache_request_headers'),
-                'getallheaders_function' => function_exists('getallheaders')
-            ]
+            'success' => false,
+            'error' => 'AUTH_TOKEN_REQUIRED',
+            'message' => 'Authorization token required'
         ]);
         exit;
     }
@@ -158,14 +136,24 @@ function requireAuth($required_roles = null) {
     
     if (!$auth_data) {
         http_response_code(401);
-        echo json_encode(['error' => 'Invalid or expired token']);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'error' => 'INVALID_TOKEN',
+            'message' => 'Invalid or expired token'
+        ]);
         exit;
     }
     
     // Rol kontrolü
     if ($required_roles && !in_array($auth_data['role'], $required_roles)) {
         http_response_code(403);
-        echo json_encode(['error' => 'Insufficient permissions']);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'error' => 'INSUFFICIENT_PERMISSIONS',
+            'message' => 'Insufficient permissions'
+        ]);
         exit;
     }
     

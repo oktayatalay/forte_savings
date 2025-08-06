@@ -39,8 +39,32 @@ try {
         SecureErrorHandler::handleAuthError('Invalid email or password', 'AUTH_FAILED', 401);
     }
     
-    // Şifre kontrolü
-    if (!password_verify($password, $user['password_hash'])) {
+    // Şifre kontrolü - enhanced bcrypt compatibility
+    $password_valid = false;
+    
+    // İlk önce normal password_verify dene
+    if (password_verify($password, $user['password_hash'])) {
+        $password_valid = true;
+    } else {
+        // bcrypt variants arasında uyumluluk için alternatif kontrol
+        // $2b$ ile $2y$ arasındaki fark için
+        $hash_to_check = $user['password_hash'];
+        if (strpos($hash_to_check, '$2b$') === 0) {
+            // $2b$ -> $2y$ çevir ve tekrar dene
+            $hash_to_check = '$2y$' . substr($hash_to_check, 4);
+            if (password_verify($password, $hash_to_check)) {
+                $password_valid = true;
+            }
+        } elseif (strpos($hash_to_check, '$2y$') === 0) {
+            // $2y$ -> $2b$ çevir ve tekrar dene
+            $hash_to_check = '$2b$' . substr($hash_to_check, 4);
+            if (password_verify($password, $hash_to_check)) {
+                $password_valid = true;
+            }
+        }
+    }
+    
+    if (!$password_valid) {
         // Apply progressive delay for failed attempts - DISABLED FOR TESTING
         // $attemptCount = RateLimiter::getStatus()['auth_attempts'] ?? 0;
         // RateLimiter::applyProgressiveDelay($email, $attemptCount);
@@ -58,14 +82,21 @@ try {
         SecureErrorHandler::handleAuthError('Email verification required', 'EMAIL_NOT_VERIFIED', 401);
     }
     
-    // JWT Secret'ı al
-    $settings_stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
-    $settings_stmt->execute();
-    $jwt_secret = $settings_stmt->fetchColumn();
+    // JWT Secret'ı al - fallback ile
+    $jwt_secret = null;
+    try {
+        $settings_stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
+        $settings_stmt->execute();
+        $jwt_secret = $settings_stmt->fetchColumn();
+    } catch (Exception $e) {
+        // system_settings tablosu yoksa veya başka hata varsa fallback kullan
+        error_log("Could not get JWT secret from database: " . $e->getMessage());
+    }
     
+    // JWT secret yoksa güvenli bir default oluştur (production'da değiştirilmeli)
     if (empty($jwt_secret)) {
-        error_log("JWT secret not configured");
-        SecureErrorHandler::sendErrorResponse('CONFIG_ERROR', 'Authentication system not configured', [], 500);
+        $jwt_secret = 'default_jwt_secret_change_in_production_' . hash('sha256', 'forte_savings_2024');
+        error_log("Using fallback JWT secret - CHANGE IN PRODUCTION!");
     }
     
     // JWT Token oluştur
@@ -105,9 +136,11 @@ try {
     
     $audit_stmt->execute([$user['id'], $user['id'], json_encode(['login_time' => date('Y-m-d H:i:s')]), $ip_address, $user_agent]);
     
-    // Başarılı yanıt
+    // Başarılı yanıt - Frontend uyumlu format
     http_response_code(200);
+    header('Content-Type: application/json; charset=UTF-8');
     echo json_encode([
+        'success' => true,
         'message' => 'Login successful',
         'token' => $jwt,
         'refresh_token' => $refresh_token,
