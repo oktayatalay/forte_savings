@@ -4,28 +4,36 @@ require_once '../config/database.php';
 
 header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+// Support both GET (URL token) and POST (JSON token) methods
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $token = $_GET['token'] ?? '';
+    if (!$token) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Token parameter required']);
+        exit;
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input || !isset($input['token'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Token required in request body']);
+        exit;
+    }
+    $token = $input['token'];
+} else {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
-}
-
 // Validasyon
-if (!isset($input['token']) || empty(trim($input['token']))) {
+if (empty(trim($token))) {
     http_response_code(400);
     echo json_encode(['error' => 'Verification token is required']);
     exit;
 }
 
-$token = trim($input['token']);
+$token = trim($token);
 
 try {
     $pdo = getDBConnection();
@@ -53,27 +61,34 @@ try {
     ");
     $update_stmt->execute([$user['id']]);
     
-    // Audit log
-    $audit_stmt = $pdo->prepare("
-        INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values, ip_address, user_agent) 
-        VALUES (?, 'UPDATE', 'users', ?, ?, ?, ?)
-    ");
-    
-    $new_values = json_encode(['email_verified' => true]);
-    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-    
-    $audit_stmt->execute([$user['id'], $user['id'], $new_values, $ip_address, $user_agent]);
+    // Audit log ekle (eğer tablo varsa)
+    try {
+        $audit_stmt = $pdo->prepare("
+            INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values, ip_address, user_agent) 
+            VALUES (?, 'UPDATE', 'users', ?, ?, ?, ?)
+        ");
+        
+        $new_values = json_encode(['email_verified' => true]);
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+        
+        $audit_stmt->execute([$user['id'], $user['id'], $new_values, $ip_address, $user_agent]);
+    } catch (PDOException $audit_error) {
+        // Audit log hatası sistem çalışmasını etkilemez
+        error_log("Audit log error: " . $audit_error->getMessage());
+    }
     
     // Başarılı yanıt
     http_response_code(200);
     echo json_encode([
-        'message' => 'Email verified successfully',
+        'success' => true,
+        'message' => 'Email successfully verified! You can now log in.',
         'user' => [
             'id' => $user['id'],
             'email' => $user['email'],
             'first_name' => $user['first_name'],
-            'last_name' => $user['last_name']
+            'last_name' => $user['last_name'],
+            'email_verified' => true
         ]
     ]);
     
