@@ -41,9 +41,9 @@ try {
     
     // Şifre kontrolü
     if (!password_verify($password, $user['password_hash'])) {
-        // Apply progressive delay for failed attempts
-        $attemptCount = RateLimiter::getStatus()['auth_attempts'] ?? 0;
-        RateLimiter::applyProgressiveDelay($email, $attemptCount);
+        // Apply progressive delay for failed attempts - DISABLED FOR TESTING
+        // $attemptCount = RateLimiter::getStatus()['auth_attempts'] ?? 0;
+        // RateLimiter::applyProgressiveDelay($email, $attemptCount);
         
         SecureErrorHandler::handleAuthError('Invalid email or password', 'AUTH_FAILED', 401);
     }

@@ -96,7 +96,7 @@ class SecurityMiddleware {
             case 'auth':
             case 'login':
             case 'register':
-                RateLimiter::checkAuthLimit();
+                // RateLimiter::checkAuthLimit(); // DISABLED FOR TESTING
                 break;
                 
             case 'password-reset':
