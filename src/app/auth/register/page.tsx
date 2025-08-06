@@ -77,7 +77,14 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setError('Sunucu yanıt hatası. Lütfen tekrar deneyin.');
+        return;
+      }
 
       if (response.ok) {
         setSuccess(true);
@@ -88,6 +95,7 @@ export default function RegisterPage() {
         setError(data.message || data.error || 'Kayıt başarısız');
       }
     } catch (err) {
+      console.error('Register error:', err);
       setError('Bağlantı hatası. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
