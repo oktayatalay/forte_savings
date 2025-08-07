@@ -219,6 +219,10 @@ export const validationUtils = {
   
   sanitizeInput: (input: string): string => {
     return input.trim().replace(/[<>\"'&]/g, '');
+  },
+  
+  isAlphanumeric: (input: string): boolean => {
+    return /^[a-zA-Z0-9]+$/.test(input);
   }
 };
 

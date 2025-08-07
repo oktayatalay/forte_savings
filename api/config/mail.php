@@ -100,7 +100,7 @@ class MailService {
     public function sendVerificationEmail($email, $firstName, $token) {
         $subject = "Forte Savings - Email Doğrulama";
         
-        $verificationUrl = "https://savings.forte.works/api/auth/verify-email.php?token=" . urlencode($token);
+        $verificationUrl = "https://savings.forte.works/api/auth/verify-email-page.php?token=" . urlencode($token);
         
         $body = "
         <html>
