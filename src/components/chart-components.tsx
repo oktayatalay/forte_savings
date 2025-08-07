@@ -467,6 +467,20 @@ export function InteractiveChartWrapper({
   selectedPeriod = '30d',
   className,
 }: InteractiveChartWrapperProps) {
+  const [isChanging, setIsChanging] = useState(false);
+
+  const handlePeriodChange = (period: string) => {
+    if (period === selectedPeriod || !onPeriodChange) return;
+    
+    setIsChanging(true);
+    onPeriodChange(period);
+    
+    // Reset loading state after animation
+    setTimeout(() => {
+      setIsChanging(false);
+    }, 300);
+  };
+
   return (
     <div className={cn("space-y-4", className)}>
       {onPeriodChange && (
@@ -475,13 +489,20 @@ export function InteractiveChartWrapper({
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">Zaman Aralığı:</span>
           </div>
-          <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-            <SelectTrigger className="w-40">
+          <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
+            <SelectTrigger className={cn(
+              "w-40 transition-all duration-200",
+              isChanging && "opacity-50"
+            )}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value}>
+                <SelectItem 
+                  key={period.value} 
+                  value={period.value}
+                  className="cursor-pointer hover:bg-accent"
+                >
                   {period.label}
                 </SelectItem>
               ))}
@@ -489,7 +510,12 @@ export function InteractiveChartWrapper({
           </Select>
         </div>
       )}
-      {children}
+      <div className={cn(
+        "transition-opacity duration-200",
+        isChanging && "opacity-75"
+      )}>
+        {children}
+      </div>
     </div>
   );
 }

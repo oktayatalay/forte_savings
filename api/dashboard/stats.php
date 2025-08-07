@@ -18,6 +18,39 @@ try {
     $user_id = $auth_data['user_id'];
     $user_role = $auth_data['role'];
     
+    // Time-based filtering parameters
+    $date_from = $_GET['date_from'] ?? null;
+    $date_to = $_GET['date_to'] ?? null;
+    $period = $_GET['period'] ?? 'all'; // 'week', 'month', 'quarter', 'year', 'all'
+    
+    // Validate and set date filters
+    $date_filter_condition = "";
+    $date_filter_params = [];
+    
+    if ($date_from && $date_to) {
+        // Custom date range
+        if (DateTime::createFromFormat('Y-m-d', $date_from) && DateTime::createFromFormat('Y-m-d', $date_to)) {
+            $date_filter_condition = " AND DATE(sr.created_at) BETWEEN ? AND ?";
+            $date_filter_params = [$date_from, $date_to];
+        }
+    } elseif ($period !== 'all') {
+        // Predefined periods
+        switch ($period) {
+            case 'week':
+                $date_filter_condition = " AND sr.created_at >= DATE_SUB(CURDATE(), INTERVAL 1 WEEK)";
+                break;
+            case 'month':
+                $date_filter_condition = " AND MONTH(sr.created_at) = MONTH(CURDATE()) AND YEAR(sr.created_at) = YEAR(CURDATE())";
+                break;
+            case 'quarter':
+                $date_filter_condition = " AND QUARTER(sr.created_at) = QUARTER(CURDATE()) AND YEAR(sr.created_at) = YEAR(CURDATE())";
+                break;
+            case 'year':
+                $date_filter_condition = " AND YEAR(sr.created_at) = YEAR(CURDATE())";
+                break;
+        }
+    }
+    
     $pdo = getDBConnection();
     
     // Kullanıcının erişebileceği projeleri belirle
@@ -49,7 +82,7 @@ try {
     $project_stats_stmt->execute($project_params);
     $project_stats = $project_stats_stmt->fetch(PDO::FETCH_ASSOC);
     
-    // 2. Tasarruf İstatistikleri (Currency bazında)
+    // 2. Tasarruf İstatistikleri (Currency bazında) - Date filtering eklendi
     $savings_stats_sql = "SELECT 
         sr.currency,
         sr.type,
@@ -57,12 +90,13 @@ try {
         COUNT(sr.id) as record_count
         FROM projects p 
         LEFT JOIN savings_records sr ON p.id = sr.project_id
-        WHERE p.is_active = TRUE AND sr.id IS NOT NULL AND " . $project_condition . "
+        WHERE p.is_active = TRUE AND sr.id IS NOT NULL AND " . $project_condition . $date_filter_condition . "
         GROUP BY sr.currency, sr.type
         ORDER BY sr.currency, sr.type";
     
     $savings_stats_stmt = $pdo->prepare($savings_stats_sql);
-    $savings_stats_stmt->execute($project_params);
+    $combined_params = array_merge($project_params, $date_filter_params);
+    $savings_stats_stmt->execute($combined_params);
     $raw_savings_stats = $savings_stats_stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Currency bazında organize et
@@ -124,14 +158,14 @@ try {
         FROM savings_records sr
         JOIN projects p ON sr.project_id = p.id
         LEFT JOIN users u ON sr.created_by = u.id
-        WHERE p.is_active = TRUE AND " . $project_condition . "
+        WHERE p.is_active = TRUE AND " . $project_condition . $date_filter_condition . "
         
         ORDER BY activity_date DESC
         LIMIT 10";
     
     $recent_activities_stmt = $pdo->prepare($recent_activities_sql);
-    // Union query için parametreleri iki kez geçmek gerekiyor
-    $union_params = array_merge($project_params, $project_params);
+    // Union query için parametreleri iki kez geçmek gerekiyor (proje + tarih filtresi)
+    $union_params = array_merge($project_params, $project_params, $date_filter_params);
     $recent_activities_stmt->execute($union_params);
     $recent_activities = $recent_activities_stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -199,6 +233,12 @@ try {
     echo json_encode([
         'success' => true,
         'data' => $stats,
+        'filters' => [
+            'period' => $period,
+            'date_from' => $date_from,
+            'date_to' => $date_to,
+            'applied_filter' => !empty($date_filter_condition)
+        ],
         'user_role' => $user_role,
         'generated_at' => date('Y-m-d H:i:s')
     ]);

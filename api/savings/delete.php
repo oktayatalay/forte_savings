@@ -27,7 +27,8 @@ try {
         $record_id = $input['id'] ?? null;
     }
     
-    if (!$record_id || !is_numeric($record_id)) {
+    // ID validation - empty, null veya geçersiz değerleri reddet
+    if (empty($record_id) || !ctype_digit(strval($record_id))) {
         http_response_code(400);
         echo json_encode(['error' => 'Valid record ID is required']);
         exit;

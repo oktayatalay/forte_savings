@@ -69,6 +69,9 @@ export default function DashboardPage() {
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [chartPeriod, setChartPeriod] = useState('30d');
+  const [chartData, setChartData] = useState(generateSampleChartData(12));
+  const [chartLoading, setChartLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -77,18 +80,30 @@ export default function DashboardPage() {
     const token = localStorage.getItem('auth_token');
 
     if (!savedUser || !token) {
-      router.push('/auth/login');
+      // Use window.location instead of router.push for static export compatibility
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
       return;
     }
 
     try {
       const userData = JSON.parse(savedUser);
       setUser(userData);
-      // Kullanıcı bilgileri yüklendikten sonra dashboard stats'ı fetch et
+      
+      // Load saved chart period preference
+      const savedPeriod = localStorage.getItem('chart_period_preference') || '30d';
+      setChartPeriod(savedPeriod);
+      
+      // Kullanıcı bilgileri yüklendikten sonra dashboard stats'ı ve chart data'sını fetch et
       fetchDashboardStats();
+      fetchChartData(savedPeriod);
     } catch (err) {
       setError('Kullanıcı bilgileri okunamadı');
-      router.push('/auth/login');
+      // Use window.location instead of router.push for static export compatibility
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     } finally {
       setLoading(false);
     }
@@ -98,7 +113,10 @@ export default function DashboardPage() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    router.push('/');
+    // Use window.location instead of router.push for static export compatibility
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   const fetchDashboardStats = async () => {
@@ -132,6 +150,51 @@ export default function DashboardPage() {
     } finally {
       setStatsLoading(false);
     }
+  };
+
+  const fetchChartData = async (period: string) => {
+    setChartLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      // Calculate months based on period
+      let months = 12;
+      switch (period) {
+        case '7d':
+          months = 1;
+          break;
+        case '30d':
+          months = 3;
+          break;
+        case '3m':
+          months = 3;
+          break;
+        case '12m':
+          months = 12;
+          break;
+        case 'all':
+          months = 24;
+          break;
+      }
+
+      // In a real application, you would fetch data from API based on period
+      // For now, we'll generate sample data with appropriate length
+      const newChartData = generateSampleChartData(months);
+      setChartData(newChartData);
+      
+      // Save period preference
+      localStorage.setItem('chart_period_preference', period);
+    } catch (err) {
+      console.error('Error fetching chart data:', err);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const handlePeriodChange = (period: string) => {
+    setChartPeriod(period);
+    fetchChartData(period);
   };
 
   const handleProjectCreated = (newProject: any) => {
@@ -182,8 +245,7 @@ export default function DashboardPage() {
 
   const breadcrumbs = useBreadcrumbs();
 
-  // Prepare chart data
-  const chartData = generateSampleChartData(12);
+  // Prepare currency chart data
   const currencyData = dashboardStats?.savings.by_currency.map((item, index) => ({
     currency: item.currency,
     total: item.total,
@@ -327,14 +389,21 @@ export default function DashboardPage() {
         {/* Charts and Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <InteractiveChartWrapper
-            onPeriodChange={(period) => console.log('Period changed:', period)}
-            selectedPeriod="30d"
+            onPeriodChange={handlePeriodChange}
+            selectedPeriod={chartPeriod}
           >
-            <SavingsTrendChart
-              data={chartData}
-              title="Tasarruf Trendi"
-              description="Aylık tasarruf ve maliyet engelleme performansı"
-            />
+            <div className="relative">
+              {chartLoading && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <div className="text-sm text-muted-foreground">Yükleniyor...</div>
+                </div>
+              )}
+              <SavingsTrendChart
+                data={chartData}
+                title="Tasarruf Trendi"
+                description="Aylık tasarruf ve maliyet engelleme performansı"
+              />
+            </div>
           </InteractiveChartWrapper>
           
           {currencyData.length > 0 ? (

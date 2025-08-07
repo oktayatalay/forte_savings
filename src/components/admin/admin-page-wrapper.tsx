@@ -35,7 +35,10 @@ export function AdminPageWrapper({
         const token = localStorage.getItem('auth_token');
 
         if (!savedUser || !token) {
-          router.push('/auth/login');
+          // Use window.location instead of router.push for static export
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
           return;
         }
 
@@ -43,20 +46,29 @@ export function AdminPageWrapper({
         setUser(userData);
       } catch (err) {
         console.error('Error loading user data:', err);
-        router.push('/auth/login');
+        // Use window.location instead of router.push for static export
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    initializeUser();
-  }, [router]);
+    // Only run on client side to prevent SSR issues
+    if (typeof window !== 'undefined') {
+      initializeUser();
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    router.push('/auth/login');
+    // Use window.location instead of router.push for static export
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
   };
 
   if (loading) {

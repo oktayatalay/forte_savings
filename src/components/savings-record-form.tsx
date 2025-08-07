@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Calculator, Plus } from 'lucide-react';
 
 interface SavingsRecord {
@@ -256,11 +257,13 @@ export function SavingsRecordForm({ open, onOpenChange, projectId, onSuccess, ed
             {/* Tarih */}
             <div className="space-y-2">
               <Label htmlFor="date">Tarih *</Label>
-              <Input
+              <DatePicker
                 id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleInputChange('date', e.target.value)}
+                value={formData.date ? new Date(formData.date) : undefined}
+                onChange={(date) => handleInputChange('date', date ? date.toISOString().split('T')[0] : '')}
+                placeholder="Tarih seçin"
+                dateFormat="DD/MM/YYYY"
+                maxDate={new Date()} // Cannot select future dates
                 required
               />
             </div>

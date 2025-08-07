@@ -1,7 +1,14 @@
 <?php
+// Start output buffering to prevent PHP warnings from corrupting JSON
+ob_start();
+
 require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
 require_once '../auth/middleware.php';
+
+// Clean any previous output and set proper headers
+if (ob_get_length()) ob_clean();
+header('Content-Type: application/json; charset=utf-8');
 
 // Apply comprehensive security
 SecurityMiddleware::setupAPI(['POST', 'OPTIONS']);
@@ -137,6 +144,9 @@ try {
         $project['is_active'] = (bool)$project['is_active'];
     }
     
+    // Clean output buffer before sending response
+    if (ob_get_length()) ob_clean();
+    
     echo json_encode([
         'success' => true,
         'message' => 'Project created successfully',
@@ -144,8 +154,27 @@ try {
     ]);
 
 } catch (PDOException $e) {
-    SecureErrorHandler::handleDatabaseError($e, 'project creation');
+    // Clean output buffer before sending error
+    if (ob_get_length()) ob_clean();
+    error_log("Project creation PDO error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Database error occurred during project creation',
+        'message' => 'Please try again or contact support'
+    ]);
 } catch (Exception $e) {
-    SecureErrorHandler::handleException($e);
+    // Clean output buffer before sending error
+    if (ob_get_length()) ob_clean();
+    error_log("Project creation error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'An error occurred during project creation',
+        'message' => $e->getMessage()
+    ]);
+} finally {
+    // Ensure output buffer is ended
+    if (ob_get_level()) ob_end_flush();
 }
 ?>

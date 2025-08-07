@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Calculator, Plus, Building } from 'lucide-react';
 
 interface Project {
@@ -393,22 +394,25 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="group_in">Başlangıç Tarihi *</Label>
-                <Input
+                <DatePicker
                   id="group_in"
-                  type="date"
-                  value={formData.group_in}
-                  onChange={(e) => handleInputChange('group_in', e.target.value)}
+                  value={formData.group_in ? new Date(formData.group_in) : undefined}
+                  onChange={(date) => handleInputChange('group_in', date ? date.toISOString().split('T')[0] : '')}
+                  placeholder="Başlangıç tarihini seçin"
+                  dateFormat="DD/MM/YYYY"
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="group_out">Bitiş Tarihi *</Label>
-                <Input
+                <DatePicker
                   id="group_out"
-                  type="date"
-                  value={formData.group_out}
-                  onChange={(e) => handleInputChange('group_out', e.target.value)}
+                  value={formData.group_out ? new Date(formData.group_out) : undefined}
+                  onChange={(date) => handleInputChange('group_out', date ? date.toISOString().split('T')[0] : '')}
+                  placeholder="Bitiş tarihini seçin"
+                  dateFormat="DD/MM/YYYY"
+                  minDate={formData.group_in ? new Date(formData.group_in) : undefined}
                   required
                 />
               </div>
