@@ -84,9 +84,22 @@ try {
         }
     }
     
-    // Tasarruf kayıtlarını al
-    $savings_sql = "SELECT 
-        sr.*,
+    // Tasarruf kayıtlarını al - DISTINCT ile duplicate önleme
+    $savings_sql = "SELECT DISTINCT
+        sr.id,
+        sr.project_id,
+        sr.date,
+        sr.type,
+        sr.explanation_category,
+        sr.explanation_custom,
+        sr.category,
+        sr.price,
+        sr.unit,
+        sr.currency,
+        sr.total_price,
+        sr.created_by,
+        sr.created_at,
+        sr.updated_at,
         CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM savings_records sr
         LEFT JOIN users u ON sr.created_by = u.id
