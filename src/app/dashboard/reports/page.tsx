@@ -34,6 +34,11 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState<ReportsStats | null>(null);
+  const [exportLoading, setExportLoading] = useState({
+    excel: false,
+    pdf: false,
+    csv: false
+  });
 
   useEffect(() => {
     fetchReportsData();
@@ -85,6 +90,126 @@ export default function ReportsPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Export handlers
+  const handleExcelExport = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      // Show export loading state
+      setExportLoading(prev => ({ ...prev, excel: true }));
+      setError(''); // Clear any previous errors
+
+      const response = await fetch('/api/reports/export-excel.php', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Excel export sırasında hata oluştu.');
+      }
+
+      // Create download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `forte_savings_export_${new Date().toISOString().slice(0, 10)}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (err: any) {
+      setError(err.message || 'Excel export sırasında hata oluştu.');
+    } finally {
+      setExportLoading(prev => ({ ...prev, excel: false }));
+    }
+  };
+
+  const handlePdfExport = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      setExportLoading(prev => ({ ...prev, pdf: true }));
+      setError(''); // Clear any previous errors
+
+      // Create a temporary form to send token in headers
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/reports/export-pdf.php';
+      form.target = '_blank';
+      
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'token';
+      tokenInput.value = token;
+      
+      form.appendChild(tokenInput);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      // Clear loading state after a short delay (PDF opens in new tab)
+      setTimeout(() => {
+        setExportLoading(prev => ({ ...prev, pdf: false }));
+      }, 2000);
+
+    } catch (err: any) {
+      setError(err.message || 'PDF export sırasında hata oluştu.');
+      setExportLoading(prev => ({ ...prev, pdf: false }));
+    }
+  };
+
+  const handleCsvExport = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      setExportLoading(prev => ({ ...prev, csv: true }));
+      setError(''); // Clear any previous errors
+
+      const response = await fetch('/api/reports/export-csv.php', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'CSV export sırasında hata oluştu.');
+      }
+
+      // Create download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `forte_savings_data_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (err: any) {
+      setError(err.message || 'CSV export sırasında hata oluştu.');
+    } finally {
+      setExportLoading(prev => ({ ...prev, csv: false }));
+    }
   };
 
   if (loading) {
@@ -216,34 +341,64 @@ export default function ReportsPage() {
               <Button 
                 variant="outline" 
                 className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
-                disabled
+                onClick={handlePdfExport}
+                disabled={!stats?.total_savings_records || exportLoading.pdf}
               >
-                <FileText className="h-6 w-6 text-red-500" />
+                {exportLoading.pdf ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+                ) : (
+                  <FileText className="h-6 w-6 text-red-500" />
+                )}
                 <div className="text-center">
-                  <div className="font-medium">PDF Raporu</div>
-                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                  <div className="font-medium">
+                    {exportLoading.pdf ? 'PDF Hazırlanıyor...' : 'PDF Raporu'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {exportLoading.pdf ? 'Lütfen bekleyin' : 
+                     stats?.total_savings_records ? 'Detaylı rapor' : 'Veri yok'}
+                  </div>
                 </div>
               </Button>
               <Button 
                 variant="outline" 
                 className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
-                disabled
+                onClick={handleExcelExport}
+                disabled={!stats?.total_savings_records || exportLoading.excel}
               >
-                <FileText className="h-6 w-6 text-green-500" />
+                {exportLoading.excel ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                ) : (
+                  <FileText className="h-6 w-6 text-green-500" />
+                )}
                 <div className="text-center">
-                  <div className="font-medium">Excel Raporu</div>
-                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                  <div className="font-medium">
+                    {exportLoading.excel ? 'Excel Hazırlanıyor...' : 'Excel Raporu'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {exportLoading.excel ? 'İndiriliyor...' :
+                     stats?.total_savings_records ? 'Tablo formatı' : 'Veri yok'}
+                  </div>
                 </div>
               </Button>
               <Button 
                 variant="outline" 
                 className="h-20 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200" 
-                disabled
+                onClick={handleCsvExport}
+                disabled={!stats?.total_savings_records || exportLoading.csv}
               >
-                <Download className="h-6 w-6 text-blue-500" />
+                {exportLoading.csv ? (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                ) : (
+                  <Download className="h-6 w-6 text-blue-500" />
+                )}
                 <div className="text-center">
-                  <div className="font-medium">CSV Dışa Aktarma</div>
-                  <div className="text-xs text-muted-foreground">(Yakında)</div>
+                  <div className="font-medium">
+                    {exportLoading.csv ? 'CSV Hazırlanıyor...' : 'CSV Dışa Aktarma'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {exportLoading.csv ? 'İndiriliyor...' :
+                     stats?.total_savings_records ? 'Ham veri' : 'Veri yok'}
+                  </div>
                 </div>
               </Button>
             </div>

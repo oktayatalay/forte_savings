@@ -232,13 +232,12 @@ function ProjectDetailContent() {
         throw new Error('Authentication token not found');
       }
 
-      const response = await fetch('/api/savings/delete.php', {
+      const response = await fetch(`/api/savings/delete.php?id=${recordId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: recordId }),
       });
 
       const data = await response.json();
