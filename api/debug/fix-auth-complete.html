@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Authentication - Forte Savings</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Authentication Issues</h1>
+        <p>This tool will fix the INVALID_TOKEN issues by syncing JWT secrets and clearing old tokens.</p>
+
+        <div class="step">
+            <h3>Step 1: Check Current JWT Status</h3>
+            <button onclick="checkJWTStatus()">Check JWT Status</button>
+            <div id="jwt-status"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Sync JWT Secret</h3>
+            <p>This will ensure database JWT secret matches the fallback secret used by login.</p>
+            <button onclick="syncJWTSecret()">Sync JWT Secret</button>
+            <div id="sync-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Clear Browser Storage</h3>
+            <p>This will remove old tokens from your browser.</p>
+            <button onclick="clearStorage()">Clear Browser Storage</button>
+            <div id="clear-result"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Test & Redirect</h3>
+            <p>After completing the above steps, click here to go to login page.</p>
+            <button onclick="goToLogin()">Go to Login Page</button>
+        </div>
+    </div>
+
+    <script>
+        async function checkJWTStatus() {
+            const statusDiv = document.getElementById('jwt-status');
+            statusDiv.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const response = await fetch('/api/debug/current-jwt-status.php');
+                const data = await response.json();
+                
+                let html = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    html += '<div class="warning">Recommendations:</div>';
+                    html += '<ul>';
+                    data.recommendations.forEach(rec => {
+                        html += '<li>' + rec + '</li>';
+                    });
+                    html += '</ul>';
+                }
+                
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function syncJWTSecret() {
+            const resultDiv = document.getElementById('sync-result');
+            resultDiv.innerHTML = '<p>Syncing...</p>';
+            
+            try {
+                const response = await fetch('/api/debug/sync-jwt-secret.php');
+                const data = await response.json();
+                
+                let html = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (data.success) {
+                    html += '<div class="success">✅ JWT Secret synchronized successfully!</div>';
+                } else {
+                    html += '<div class="error">❌ Failed to sync JWT secret</div>';
+                }
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        function clearStorage() {
+            const resultDiv = document.getElementById('clear-result');
+            
+            try {
+                // Clear all localStorage
+                localStorage.clear();
+                
+                // Clear all sessionStorage
+                sessionStorage.clear();
+                
+                // Clear all cookies for this domain
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                resultDiv.innerHTML = '<div class="success">✅ Browser storage cleared successfully!</div>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        function goToLogin() {
+            window.location.href = '/auth/login';
+        }
+
+        // Auto-check status on page load
+        window.addEventListener('load', function() {
+            checkJWTStatus();
+        });
+    </script>
+</body>
+</html>
