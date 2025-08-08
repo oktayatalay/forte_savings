@@ -194,6 +194,11 @@ function ProjectDetailContent() {
           console.warn('🎯 DEBUG: About to set savingsRecords state with:', data.data.savings_records.length, 'records');
           console.warn('🎯 DEBUG: Sample records:', data.data.savings_records.slice(0, 3));
           
+          // Debug: Log all record IDs to see exact API response
+          const allIds = data.data.savings_records.map((r: any) => r.id);
+          console.warn('🔍 DEBUG: All IDs from API:', allIds);
+          console.warn('🔍 DEBUG: Last 3 records from API:', data.data.savings_records.slice(-3));
+          
           setSavingsRecords(data.data.savings_records);
           setProjectTeam(data.data.project_team);
           setStatistics(data.data.statistics);
@@ -744,13 +749,23 @@ function ProjectDetailContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {(() => {
+                      // Log what's being rendered in the table
+                      console.warn('🎨 TABLE DEBUG: Rendering', savingsRecords.length, 'records');
+                      console.warn('🎨 TABLE DEBUG: Record IDs in order:', savingsRecords.map(r => r.id));
+                      console.warn('🎨 TABLE DEBUG: Last record:', savingsRecords[savingsRecords.length - 1]);
+                      return null;
+                    })()}
                     {savingsRecords.map((record, index) => {
+                      const isLastRecord = index === savingsRecords.length - 1;
+                      console.warn(`🎨 RENDER: Record ${record.id} at index ${index}${isLastRecord ? ' (LAST)' : ''}`);
                       return (
                         <TableRow 
-                          key={record.id}
+                          key={`record-${record.id}-${index}`}
                           className={cn(
                             "hover:bg-muted/30 transition-all duration-200",
-                            index % 2 === 0 && "bg-muted/10"
+                            index % 2 === 0 && "bg-muted/10",
+                            isLastRecord && "border-b-2 border-blue-500" // Debug: highlight last record
                           )}
                         >
                     <TableCell>{formatDate(record.date)}</TableCell>
