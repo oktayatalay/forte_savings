@@ -86,6 +86,21 @@ function ProjectDetailContent() {
   
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [savingsRecords, setSavingsRecords] = useState<SavingsRecord[]>([]);
+  
+  // Debug savingsRecords state changes
+  useEffect(() => {
+    console.log('🔄 DEBUG: savingsRecords state changed, count:', savingsRecords.length);
+    if (savingsRecords.length > 0) {
+      const stateIds = savingsRecords.map(r => r.id);
+      const uniqueStateIds = [...new Set(stateIds)];
+      if (stateIds.length !== uniqueStateIds.length) {
+        console.warn('🚨 DUPLICATE IDs in React STATE!');
+        console.log('🔍 State IDs:', stateIds);
+        console.log('🔍 Unique State IDs:', uniqueStateIds);
+      }
+      console.log('🔍 Sample state records:', savingsRecords.slice(0, 3));
+    }
+  }, [savingsRecords]);
   const [projectTeam, setProjectTeam] = useState<ProjectTeam[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [userPermission, setUserPermission] = useState<string>('viewer');
@@ -142,6 +157,18 @@ function ProjectDetailContent() {
           console.log('🔍 DEBUG: Raw savings records from API:', data.data.savings_records);
           console.log('🔍 DEBUG: Records count:', data.data.savings_records.length);
           
+          // Enhanced duplicate debugging  
+          const recordAnalysis: any = {};
+          data.data.savings_records.forEach((r: any, index: number) => {
+            const key = `ID-${r.id}`;
+            if (!recordAnalysis[key]) {
+              recordAnalysis[key] = [];
+            }
+            recordAnalysis[key].push({ index, unit: r.unit, date: r.date });
+          });
+          
+          console.log('🔍 DEBUG: Record analysis by ID:', recordAnalysis);
+          
           // Check for duplicates by ID
           const recordIds = data.data.savings_records.map((r: any) => r.id);
           const uniqueIds = [...new Set(recordIds)];
@@ -149,24 +176,17 @@ function ProjectDetailContent() {
             console.warn('🚨 DUPLICATE IDs detected in API response!');
             console.log('🔍 All IDs:', recordIds);
             console.log('🔍 Unique IDs:', uniqueIds);
+            
+            // Show which IDs are duplicated
+            const duplicateIds = recordIds.filter((id: number, index: number, arr: number[]) => 
+              arr.indexOf(id) !== index
+            );
+            console.log('🔍 Duplicate IDs:', [...new Set(duplicateIds)]);
           }
           
-          // Check for identical records (same content, different IDs)
-          const recordHashes = data.data.savings_records.map((r: any) => 
-            `${r.date}-${r.type}-${r.category}-${r.price}-${r.unit}-${r.currency}`
-          );
-          const uniqueHashes = [...new Set(recordHashes)];
-          if (recordHashes.length !== uniqueHashes.length) {
-            console.warn('🚨 IDENTICAL records detected in API response!');
-            console.log('🔍 Record hashes:', recordHashes);
-            console.log('🔍 Unique hashes:', uniqueHashes);
-            
-            // Find duplicates
-            const duplicateHashes = recordHashes.filter((hash: string, index: number, arr: string[]) => 
-              arr.indexOf(hash) !== index
-            );
-            console.log('🔍 Duplicate hashes:', duplicateHashes);
-          }
+          // Additional state debugging before setting records
+          console.log('🎯 DEBUG: About to set savingsRecords state with:', data.data.savings_records.length, 'records');
+          console.log('🎯 DEBUG: Sample records:', data.data.savings_records.slice(0, 3));
           
           setSavingsRecords(data.data.savings_records);
           setProjectTeam(data.data.project_team);
@@ -718,14 +738,16 @@ function ProjectDetailContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {savingsRecords.map((record, index) => (
-                      <TableRow 
-                        key={record.id}
-                        className={cn(
-                          "hover:bg-muted/30 transition-all duration-200",
-                          index % 2 === 0 && "bg-muted/10"
-                        )}
-                      >
+                    {savingsRecords.map((record, index) => {
+                      console.log('🎯 DEBUG: Rendering record', record.id, 'unit:', record.unit);
+                      return (
+                        <TableRow 
+                          key={record.id}
+                          className={cn(
+                            "hover:bg-muted/30 transition-all duration-200",
+                            index % 2 === 0 && "bg-muted/10"
+                          )}
+                        >
                     <TableCell>{formatDate(record.date)}</TableCell>
                     <TableCell>{getTypeBadge(record.type)}</TableCell>
                     <TableCell>{record.category}</TableCell>
@@ -766,7 +788,8 @@ function ProjectDetailContent() {
                       </div>
                     </TableCell>
                   </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
