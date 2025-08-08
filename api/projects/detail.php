@@ -205,6 +205,10 @@ try {
     $cc_stmt->execute([$project_id]);
     $project_team = $cc_stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // DEBUG: Log final savings_records before JSON response
+    error_log("DEBUG: Final response will contain " . count($savings_records) . " savings_records");
+    error_log("DEBUG: Savings records IDs in response: " . implode(',', array_column($savings_records, 'id')));
+    
     $response = [
         'success' => true,
         'data' => [
