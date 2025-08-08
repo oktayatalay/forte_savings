@@ -489,57 +489,17 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        {project.actual_savings === 0 ? (
-                          <p className="font-medium text-green-600">₺0</p>
-                        ) : (
-                          <div className="space-y-0.5">
-                            {project.savings_by_currency
-                              .filter(c => c.savings > 0)
-                              .map(currencyData => (
-                              <p key={currencyData.currency} className="text-sm font-medium text-green-600">
-                                {new Intl.NumberFormat('tr-TR', {
-                                  style: 'currency',
-                                  currency: currencyData.currency,
-                                  minimumFractionDigits: 0,
-                                  maximumFractionDigits: 0
-                                }).format(currencyData.savings)}
-                              </p>
-                            ))}
-                            {project.savings_by_currency.filter(c => c.savings > 0).length === 0 && project.actual_savings > 0 && (
-                              <p className="text-sm font-medium text-green-600">
-                                {formatCurrency(project.actual_savings)}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                        <p className="text-sm font-medium text-green-600">
+                          {project.actual_savings === 0 ? '₺0' : formatCurrency(project.actual_savings)}
+                        </p>
                         <p className="text-xs text-muted-foreground">Tasarruf</p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        {project.cost_avoidance === 0 ? (
-                          <p className="font-medium text-blue-600">₺0</p>
-                        ) : (
-                          <div className="space-y-0.5">
-                            {project.savings_by_currency
-                              .filter(c => c.cost_avoidance > 0)
-                              .map(currencyData => (
-                              <p key={currencyData.currency} className="text-sm font-medium text-blue-600">
-                                {new Intl.NumberFormat('tr-TR', {
-                                  style: 'currency',
-                                  currency: currencyData.currency,
-                                  minimumFractionDigits: 0,
-                                  maximumFractionDigits: 0
-                                }).format(currencyData.cost_avoidance)}
-                              </p>
-                            ))}
-                            {project.savings_by_currency.filter(c => c.cost_avoidance > 0).length === 0 && project.cost_avoidance > 0 && (
-                              <p className="text-sm font-medium text-blue-600">
-                                {formatCurrency(project.cost_avoidance)}
-                              </p>
-                            )}
-                          </div>
-                        )}
+                        <p className="text-sm font-medium text-blue-600">
+                          {project.cost_avoidance === 0 ? '₺0' : formatCurrency(project.cost_avoidance)}
+                        </p>
                         <p className="text-xs text-muted-foreground">Maliyet Eng.</p>
                       </div>
                     </TableCell>
