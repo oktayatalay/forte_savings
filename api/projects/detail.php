@@ -122,6 +122,25 @@ try {
         $record['total_price'] = floatval($record['total_price']);
     }
     
+    // Clean duplicates before statistics calculation (in case of data inconsistencies)
+    $unique_records = [];
+    $seen_ids = [];
+    foreach ($savings_records as $record) {
+        if (!in_array($record['id'], $seen_ids)) {
+            $unique_records[] = $record;
+            $seen_ids[] = $record['id'];
+        }
+    }
+    
+    // Log if duplicates were found and removed
+    if (count($savings_records) !== count($unique_records)) {
+        error_log("Duplicate records found and cleaned for project {$project_id}: " . 
+                  count($savings_records) . " -> " . count($unique_records));
+    }
+    
+    // Use cleaned records for further processing
+    $savings_records = $unique_records;
+    
     // Proje istatistiklerini currency bazında hesapla
     $stats_by_currency = [];
     $total_records = count($savings_records);

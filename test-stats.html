@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Statistics</title>
+</head>
+<body>
+    <h1>Test Statistics Calculation</h1>
+    
+    <h2>Raw API Data:</h2>
+    <div id="raw-data"></div>
+    
+    <h2>Frontend Manual Calculation:</h2>
+    <div id="manual-calc"></div>
+    
+    <script>
+        async function testStats() {
+            try {
+                // Get raw data
+                const response = await fetch('/api/debug/project-records-raw.php?project_id=3');
+                const data = await response.json();
+                
+                document.getElementById('raw-data').innerHTML = `
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                // Manual calculation from records
+                const records = data.records || [];
+                const stats = {
+                    total_records: records.length,
+                    total_amount: 0,
+                    by_currency: {}
+                };
+                
+                records.forEach(record => {
+                    const currency = record.currency;
+                    const amount = parseFloat(record.total_price);
+                    
+                    if (!stats.by_currency[currency]) {
+                        stats.by_currency[currency] = {
+                            currency: currency,
+                            savings: 0,
+                            cost_avoidance: 0,
+                            total: 0,
+                            record_count: 0
+                        };
+                    }
+                    
+                    if (record.type === 'Savings') {
+                        stats.by_currency[currency].savings += amount;
+                    } else {
+                        stats.by_currency[currency].cost_avoidance += amount;
+                    }
+                    
+                    stats.by_currency[currency].total += amount;
+                    stats.by_currency[currency].record_count++;
+                    stats.total_amount += amount;
+                });
+                
+                document.getElementById('manual-calc').innerHTML = `
+                    <pre>${JSON.stringify(stats, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('raw-data').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        testStats();
+    </script>
+</body>
+</html>
