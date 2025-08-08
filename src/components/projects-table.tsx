@@ -505,6 +505,11 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                                 }).format(currencyData.savings)}
                               </p>
                             ))}
+                            {project.savings_by_currency.filter(c => c.savings > 0).length === 0 && project.actual_savings > 0 && (
+                              <p className="text-sm font-medium text-green-600">
+                                {formatCurrency(project.actual_savings)}
+                              </p>
+                            )}
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground">Tasarruf</p>
@@ -528,6 +533,11 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                                 }).format(currencyData.cost_avoidance)}
                               </p>
                             ))}
+                            {project.savings_by_currency.filter(c => c.cost_avoidance > 0).length === 0 && project.cost_avoidance > 0 && (
+                              <p className="text-sm font-medium text-blue-600">
+                                {formatCurrency(project.cost_avoidance)}
+                              </p>
+                            )}
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground">Maliyet Eng.</p>

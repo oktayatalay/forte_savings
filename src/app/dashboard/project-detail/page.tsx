@@ -598,27 +598,75 @@ function ProjectDetailContent() {
               variant="modern"
             />
             
-            <Card className="col-span-2 transition-all duration-300 hover:shadow-medium bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200/50 dark:border-green-800/50">
+            <Card className="col-span-1 transition-all duration-300 hover:shadow-medium bg-gradient-to-br from-green-50 via-green-50 to-green-100 border-green-200 dark:from-green-900/20 dark:to-green-800/20 dark:border-green-800">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <CardTitle className="flex items-center gap-2 text-green-600">
                   <TrendingUp className="w-5 h-5" />
                   Tasarruf Detayları
                 </CardTitle>
                 <CardDescription>
-                  Para birimlerine göre tasarruf ve maliyet engelleme
+                  Para birimlerine göre sadece tasarruf kayıtları
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {statistics.by_currency.length === 0 ? (
+                {statistics.by_currency.filter(item => item.savings > 0).length === 0 ? (
                   <div className="text-center py-4 text-muted-foreground">
                     Henüz tasarruf kaydı bulunmuyor
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <CurrencyCards 
-                      data={statistics.by_currency}
-                      compact={true}
-                    />
+                  <div className="space-y-1">
+                    {statistics.by_currency
+                      .filter(item => item.savings > 0)
+                      .map(item => (
+                        <div key={item.currency} className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">{item.currency}</span>
+                          <span className="font-bold text-green-600">
+                            {new Intl.NumberFormat('tr-TR', {
+                              style: 'currency',
+                              currency: item.currency,
+                              notation: 'compact',
+                              maximumFractionDigits: 0
+                            }).format(item.savings)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card className="col-span-1 transition-all duration-300 hover:shadow-medium bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20 dark:border-blue-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-blue-600">
+                  <DollarSign className="w-5 h-5" />
+                  Maliyet Engelleme Detayları
+                </CardTitle>
+                <CardDescription>
+                  Para birimlerine göre sadece maliyet engelleme kayıtları
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {statistics.by_currency.filter(item => item.cost_avoidance > 0).length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Henüz maliyet engelleme kaydı bulunmuyor
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {statistics.by_currency
+                      .filter(item => item.cost_avoidance > 0)
+                      .map(item => (
+                        <div key={item.currency} className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">{item.currency}</span>
+                          <span className="font-bold text-blue-600">
+                            {new Intl.NumberFormat('tr-TR', {
+                              style: 'currency',
+                              currency: item.currency,
+                              notation: 'compact',
+                              maximumFractionDigits: 0
+                            }).format(item.cost_avoidance)}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </CardContent>
