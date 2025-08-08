@@ -155,27 +155,56 @@ function ProjectDetailContent() {
     fetchProjectDetail();
   }, [projectId, router]);
 
-  const handleSavingsRecordAdded = (newRecord: SavingsRecord) => {
-    // Yeni kayıt eklendikten sonra listeyi güncelle
-    setSavingsRecords(prev => [newRecord, ...prev]);
-    
-    // İstatistikleri güncelle
-    if (statistics) {
-      const newStats = { ...statistics };
-      newStats.total_savings_records += 1;
-      
-      if (newRecord.type === 'Savings') {
-        newStats.total_savings += newRecord.total_price;
-      } else {
-        newStats.total_cost_avoidance += newRecord.total_price;
+  const handleSavingsRecordAdded = async (newRecord: SavingsRecord) => {
+    // Duplicate önlemek için tüm veriyi yeniden yükle
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const response = await fetch(`/api/projects/detail.php?id=${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setSavingsRecords(data.data.savings_records);
+          setStatistics(data.data.statistics);
+        }
       }
-      newStats.total_amount += newRecord.total_price;
+    } catch (err) {
+      console.error('Error refreshing data after add:', err);
+      // Fallback: manuel state update with duplicate check
+      setSavingsRecords(prev => {
+        const exists = prev.some(record => record.id === newRecord.id);
+        if (exists) {
+          console.warn('Duplicate record detected, skipping add');
+          return prev;
+        }
+        return [newRecord, ...prev];
+      });
       
-      if (!newStats.last_record_date || newRecord.date > newStats.last_record_date) {
-        newStats.last_record_date = newRecord.date;
+      // İstatistikleri güncelle (fallback)
+      if (statistics) {
+        const newStats = { ...statistics };
+        newStats.total_savings_records += 1;
+        
+        if (newRecord.type === 'Savings') {
+          newStats.total_savings += newRecord.total_price;
+        } else {
+          newStats.total_cost_avoidance += newRecord.total_price;
+        }
+        newStats.total_amount += newRecord.total_price;
+        
+        if (!newStats.last_record_date || newRecord.date > newStats.last_record_date) {
+          newStats.last_record_date = newRecord.date;
+        }
+        
+        setStatistics(newStats);
       }
-      
-      setStatistics(newStats);
     }
   };
 
@@ -184,36 +213,58 @@ function ProjectDetailContent() {
     setShowAddForm(true);
   };
 
-  const handleSavingsRecordUpdated = (updatedRecord: SavingsRecord) => {
-    // Güncellenen kayıt ile listeyi güncelle
-    setSavingsRecords(prev => 
-      prev.map(record => 
-        record.id === updatedRecord.id ? updatedRecord : record
-      )
-    );
-    
-    // İstatistikleri yeniden hesapla
-    if (statistics) {
-      const totalSavings = savingsRecords.reduce((sum, record) => {
-        if (record.id === updatedRecord.id) {
-          return sum + (updatedRecord.type === 'Savings' ? updatedRecord.total_price : 0);
-        }
-        return sum + (record.type === 'Savings' ? record.total_price : 0);
-      }, 0);
-      
-      const totalCostAvoidance = savingsRecords.reduce((sum, record) => {
-        if (record.id === updatedRecord.id) {
-          return sum + (updatedRecord.type === 'Cost Avoidance' ? updatedRecord.total_price : 0);
-        }
-        return sum + (record.type === 'Cost Avoidance' ? record.total_price : 0);
-      }, 0);
-      
-      setStatistics({
-        ...statistics,
-        total_savings: totalSavings,
-        total_cost_avoidance: totalCostAvoidance,
-        total_amount: totalSavings + totalCostAvoidance
+  const handleSavingsRecordUpdated = async (updatedRecord: SavingsRecord) => {
+    // Duplicate önlemek için tüm veriyi yeniden yükle
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const response = await fetch(`/api/projects/detail.php?id=${projectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setSavingsRecords(data.data.savings_records);
+          setStatistics(data.data.statistics);
+        }
+      }
+    } catch (err) {
+      console.error('Error refreshing data after update:', err);
+      // Fallback: manuel state update
+      setSavingsRecords(prev => 
+        prev.map(record => 
+          record.id === updatedRecord.id ? updatedRecord : record
+        )
+      );
+      
+      // İstatistikleri yeniden hesapla (fallback)
+      if (statistics) {
+        const totalSavings = savingsRecords.reduce((sum, record) => {
+          if (record.id === updatedRecord.id) {
+            return sum + (updatedRecord.type === 'Savings' ? updatedRecord.total_price : 0);
+          }
+          return sum + (record.type === 'Savings' ? record.total_price : 0);
+        }, 0);
+        
+        const totalCostAvoidance = savingsRecords.reduce((sum, record) => {
+          if (record.id === updatedRecord.id) {
+            return sum + (updatedRecord.type === 'Cost Avoidance' ? updatedRecord.total_price : 0);
+          }
+          return sum + (record.type === 'Cost Avoidance' ? record.total_price : 0);
+        }, 0);
+        
+        setStatistics({
+          ...statistics,
+          total_savings: totalSavings,
+          total_cost_avoidance: totalCostAvoidance,
+          total_amount: totalSavings + totalCostAvoidance
+        });
+      }
     }
     
     setEditingRecord(null);
