@@ -199,7 +199,31 @@ function ProjectDetailContent() {
           console.warn('🔍 DEBUG: All IDs from API:', allIds);
           console.warn('🔍 DEBUG: Last 3 records from API:', data.data.savings_records.slice(-3));
           
-          setSavingsRecords(data.data.savings_records);
+          // Check for duplicates in API response
+          const uniqueApiIds = [...new Set(allIds)];
+          if (allIds.length !== uniqueApiIds.length) {
+            console.error('🚨 DUPLICATE IDs IN API RESPONSE!', {
+              total: allIds.length,
+              unique: uniqueApiIds.length,
+              duplicates: allIds.filter((id: number, index: number, arr: number[]) => arr.indexOf(id) !== index)
+            });
+          } else {
+            console.warn('✅ API Response clean - no duplicates');
+          }
+          
+          // Clean the data before setting state (remove any potential duplicates)
+          const cleanRecords = data.data.savings_records.filter((record: any, index: number, arr: any[]) => 
+            arr.findIndex((r: any) => r.id === record.id) === index
+          );
+          
+          if (cleanRecords.length !== data.data.savings_records.length) {
+            console.warn('🧹 CLEANED DATA: Removed duplicates', {
+              original: data.data.savings_records.length,
+              cleaned: cleanRecords.length
+            });
+          }
+          
+          setSavingsRecords(cleanRecords);
           setProjectTeam(data.data.project_team);
           setStatistics(data.data.statistics);
           setUserPermission(data.data.user_permission);
@@ -241,7 +265,12 @@ function ProjectDetailContent() {
             console.log('🔍 All IDs:', refetchIds);
             console.log('🔍 Unique IDs:', refetchUniqueIds);
           }
-          setSavingsRecords(data.data.savings_records);
+          
+          // Clean data before setting state
+          const cleanRefetchRecords = data.data.savings_records.filter((record: any, index: number, arr: any[]) => 
+            arr.findIndex((r: any) => r.id === record.id) === index
+          );
+          setSavingsRecords(cleanRefetchRecords);
           setStatistics(data.data.statistics);
         }
       }
@@ -299,7 +328,11 @@ function ProjectDetailContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setSavingsRecords(data.data.savings_records);
+          // Clean data before setting state (update case)
+          const cleanUpdateRecords = data.data.savings_records.filter((record: any, index: number, arr: any[]) => 
+            arr.findIndex((r: any) => r.id === record.id) === index
+          );
+          setSavingsRecords(cleanUpdateRecords);
           setStatistics(data.data.statistics);
         }
       }
