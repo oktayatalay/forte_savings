@@ -83,13 +83,17 @@ try {
     $project_stats = $project_stats_stmt->fetch(PDO::FETCH_ASSOC);
     
     // 2. Tasarruf İstatistikleri (Currency bazında) - Date filtering eklendi
+    // Use a subquery to eliminate potential duplicates in savings_records
     $savings_stats_sql = "SELECT 
         sr.currency,
         sr.type,
         COALESCE(SUM(sr.total_price), 0) as total_amount,
         COUNT(sr.id) as record_count
         FROM projects p 
-        LEFT JOIN savings_records sr ON p.id = sr.project_id
+        LEFT JOIN (
+            SELECT DISTINCT id, project_id, currency, type, total_price, created_at, created_by
+            FROM savings_records
+        ) sr ON p.id = sr.project_id
         WHERE p.is_active = TRUE AND sr.id IS NOT NULL AND " . $project_condition . $date_filter_condition . "
         GROUP BY sr.currency, sr.type
         ORDER BY sr.currency, sr.type";
@@ -155,7 +159,10 @@ try {
         sr.created_at as activity_date,
         CONCAT(u.first_name, ' ', u.last_name) as user_name,
         CONCAT(sr.type, ' kaydı eklendi: ', FORMAT(sr.total_price, 2), ' ', sr.currency) as activity_description
-        FROM savings_records sr
+        FROM (
+            SELECT DISTINCT id, project_id, type, total_price, currency, created_at, created_by
+            FROM savings_records
+        ) sr
         JOIN projects p ON sr.project_id = p.id
         LEFT JOIN users u ON sr.created_by = u.id
         WHERE p.is_active = TRUE AND " . $project_condition . $date_filter_condition . "
@@ -178,7 +185,10 @@ try {
         p.total_savings,
         COUNT(sr.id) as records_count
         FROM projects p
-        LEFT JOIN savings_records sr ON p.id = sr.project_id 
+        LEFT JOIN (
+            SELECT DISTINCT id, project_id, created_at
+            FROM savings_records
+        ) sr ON p.id = sr.project_id 
             AND MONTH(sr.created_at) = MONTH(CURDATE()) 
             AND YEAR(sr.created_at) = YEAR(CURDATE())
         WHERE p.is_active = TRUE AND " . $project_condition . "
