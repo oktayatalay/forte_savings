@@ -84,8 +84,8 @@ try {
         }
     }
     
-    // Tasarruf kayıtlarını al - DISTINCT ile duplicate önleme
-    $savings_sql = "SELECT DISTINCT
+    // Tasarruf kayıtlarını al - Subquery ile duplicate önleme
+    $savings_sql = "SELECT 
         sr.id,
         sr.project_id,
         sr.date,
@@ -100,9 +100,11 @@ try {
         sr.created_by,
         sr.created_at,
         sr.updated_at,
-        CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+        (SELECT CONCAT(u.first_name, ' ', u.last_name) 
+         FROM users u 
+         WHERE u.id = sr.created_by 
+         LIMIT 1) as created_by_name
         FROM savings_records sr
-        LEFT JOIN users u ON sr.created_by = u.id
         WHERE sr.project_id = ?
         ORDER BY sr.date DESC, sr.created_at DESC";
     
