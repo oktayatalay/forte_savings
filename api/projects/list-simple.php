@@ -1,4 +1,5 @@
 <?php
+// FORCE UPDATE: 2025-08-09 00:30 - Fix savings calculation
 require_once '../config/cors.php';
 require_once '../config/database.php';
 require_once '../auth/middleware.php';
