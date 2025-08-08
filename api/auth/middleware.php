@@ -5,13 +5,20 @@ function verifyJWT($token) {
     try {
         $pdo = getDBConnection();
         
-        // JWT Secret'ı al
-        $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
-        $stmt->execute();
-        $jwt_secret = $stmt->fetchColumn();
+        // JWT Secret'ı al - fallback ile (login.php ile uyumlu)
+        $jwt_secret = null;
+        try {
+            $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
+            $stmt->execute();
+            $jwt_secret = $stmt->fetchColumn();
+        } catch (Exception $e) {
+            error_log("Could not get JWT secret from database: " . $e->getMessage());
+        }
         
+        // JWT secret yoksa güvenli bir default oluştur (login.php ile aynı fallback)
         if (empty($jwt_secret)) {
-            return false;
+            $jwt_secret = 'default_jwt_secret_change_in_production_' . hash('sha256', 'forte_savings_2024');
+            error_log("Using fallback JWT secret in middleware - CHANGE IN PRODUCTION!");
         }
         
         // JWT'yi parçala
