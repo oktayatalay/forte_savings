@@ -104,10 +104,10 @@ try {
         p.created_at, p.updated_at,
         CONCAT(u.first_name, ' ', u.last_name) as created_by_name,
         '" . ($user_role === 'admin' ? 'admin' : 'owner') . "' as user_permission,
-        (SELECT COUNT(*) FROM savings_records sr WHERE sr.project_id = p.id) as savings_records_count,
-        (SELECT sr.date FROM savings_records sr WHERE sr.project_id = p.id ORDER BY sr.date DESC LIMIT 1) as last_savings_date,
-        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Savings' THEN sr.total_price ELSE 0 END), 0) FROM savings_records sr WHERE sr.project_id = p.id) as actual_savings,
-        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Cost Avoidance' THEN sr.total_price ELSE 0 END), 0) FROM savings_records sr WHERE sr.project_id = p.id) as cost_avoidance
+        (SELECT COUNT(DISTINCT sr.id) FROM savings_records sr WHERE sr.project_id = p.id) as savings_records_count,
+        (SELECT sr.date FROM (SELECT DISTINCT id, project_id, date FROM savings_records) sr WHERE sr.project_id = p.id ORDER BY sr.date DESC LIMIT 1) as last_savings_date,
+        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Savings' THEN sr.total_price ELSE 0 END), 0) FROM (SELECT DISTINCT id, project_id, type, total_price FROM savings_records) sr WHERE sr.project_id = p.id) as actual_savings,
+        (SELECT COALESCE(SUM(CASE WHEN sr.type = 'Cost Avoidance' THEN sr.total_price ELSE 0 END), 0) FROM (SELECT DISTINCT id, project_id, type, total_price FROM savings_records) sr WHERE sr.project_id = p.id) as cost_avoidance
         FROM projects p 
         LEFT JOIN users u ON p.created_by = u.id
         {$base_where}
@@ -140,14 +140,17 @@ try {
             $project['last_savings_date'] = date('Y-m-d', strtotime($project['last_savings_date']));
         }
         
-        // Her proje için currency breakdown'ını al
+        // Her proje için currency breakdown'ını al (DISTINCT ile)
         $currency_sql = "SELECT 
             currency,
             COALESCE(SUM(CASE WHEN type = 'Savings' THEN total_price ELSE 0 END), 0) as savings,
             COALESCE(SUM(CASE WHEN type = 'Cost Avoidance' THEN total_price ELSE 0 END), 0) as cost_avoidance,
             COALESCE(SUM(total_price), 0) as total
-            FROM savings_records 
-            WHERE project_id = ? 
+            FROM (
+                SELECT DISTINCT id, project_id, currency, type, total_price
+                FROM savings_records
+            ) sr
+            WHERE sr.project_id = ? 
             GROUP BY currency 
             HAVING total > 0 
             ORDER BY total DESC";
