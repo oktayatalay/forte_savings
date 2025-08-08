@@ -1,18 +1,11 @@
 <?php
-// Minimal test - No includes, no middleware, just raw database query
+// Minimal test - Use proper database connection
 header('Content-Type: application/json');
+require_once '../config/database.php';
 
 try {
-    // Database connection
-    $servername = "localhost";
-    $username = "fortetou_user";  
-    $password = "fortetour2024!";
-    $dbname = "fortetou_savings";
-    
-    $pdo = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-    ]);
+    // Use proper database connection
+    $pdo = getDBConnection();
     
     // Raw query - no middleware, no includes
     $sql = "SELECT 
