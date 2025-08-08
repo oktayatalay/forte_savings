@@ -489,14 +489,13 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        {/* Debug: Console log to see what API returns */}
-                        {(() => {
-                          console.log('Project data for', project.frn, ':', {
-                            actual_savings: project.actual_savings,
-                            savings_by_currency: project.savings_by_currency
-                          });
-                          return null;
-                        })()}
+                        {project.frn === 'FRN-2025-001' && (
+                          <div>
+                            <p className="text-xs text-red-600 font-bold">
+                              DEBUG: savings={project.savings_by_currency.find(c => c.currency === 'TRY')?.savings || 'NONE'}
+                            </p>
+                          </div>
+                        )}
                         
                         {project.savings_by_currency.filter(c => c.savings > 0).length === 0 ? (
                           <p className="text-sm font-medium text-green-600">₺0</p>
