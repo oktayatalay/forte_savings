@@ -87,18 +87,24 @@ function ProjectDetailContent() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [savingsRecords, setSavingsRecords] = useState<SavingsRecord[]>([]);
   
-  // Debug savingsRecords state changes
+  // Debug savingsRecords state changes - ALL AS WARNINGS TO BE VISIBLE
   useEffect(() => {
-    console.log('🔄 DEBUG: savingsRecords state changed, count:', savingsRecords.length);
+    console.warn('🔄 DEBUG: savingsRecords state changed, count:', savingsRecords.length);
     if (savingsRecords.length > 0) {
       const stateIds = savingsRecords.map(r => r.id);
       const uniqueStateIds = [...new Set(stateIds)];
       if (stateIds.length !== uniqueStateIds.length) {
         console.warn('🚨 DUPLICATE IDs in React STATE!');
-        console.log('🔍 State IDs:', stateIds);
-        console.log('🔍 Unique State IDs:', uniqueStateIds);
+        console.warn('🔍 State IDs:', stateIds);
+        console.warn('🔍 Unique State IDs:', uniqueStateIds);
+        
+        // Show exactly which records are duplicated
+        const duplicateStateIds = stateIds.filter((id: number, index: number, arr: number[]) => 
+          arr.indexOf(id) !== index
+        );
+        console.warn('🔍 Which IDs are duplicated in state:', [...new Set(duplicateStateIds)]);
       }
-      console.log('🔍 Sample state records:', savingsRecords.slice(0, 3));
+      console.warn('🔍 Sample state records:', savingsRecords.slice(0, 3));
     }
   }, [savingsRecords]);
   const [projectTeam, setProjectTeam] = useState<ProjectTeam[]>([]);
@@ -153,9 +159,9 @@ function ProjectDetailContent() {
         if (data.success) {
           setProject(data.data.project);
           
-          // DEBUG: Duplicate records analysis
-          console.log('🔍 DEBUG: Raw savings records from API:', data.data.savings_records);
-          console.log('🔍 DEBUG: Records count:', data.data.savings_records.length);
+          // DEBUG: Duplicate records analysis - ALL AS WARNINGS TO BE VISIBLE
+          console.warn('🔍 DEBUG: Raw savings records from API:', data.data.savings_records);
+          console.warn('🔍 DEBUG: Records count:', data.data.savings_records.length);
           
           // Enhanced duplicate debugging  
           const recordAnalysis: any = {};
@@ -167,26 +173,26 @@ function ProjectDetailContent() {
             recordAnalysis[key].push({ index, unit: r.unit, date: r.date });
           });
           
-          console.log('🔍 DEBUG: Record analysis by ID:', recordAnalysis);
+          console.warn('🔍 DEBUG: Record analysis by ID:', recordAnalysis);
           
           // Check for duplicates by ID
           const recordIds = data.data.savings_records.map((r: any) => r.id);
           const uniqueIds = [...new Set(recordIds)];
           if (recordIds.length !== uniqueIds.length) {
             console.warn('🚨 DUPLICATE IDs detected in API response!');
-            console.log('🔍 All IDs:', recordIds);
-            console.log('🔍 Unique IDs:', uniqueIds);
+            console.warn('🔍 All IDs:', recordIds);
+            console.warn('🔍 Unique IDs:', uniqueIds);
             
             // Show which IDs are duplicated
             const duplicateIds = recordIds.filter((id: number, index: number, arr: number[]) => 
               arr.indexOf(id) !== index
             );
-            console.log('🔍 Duplicate IDs:', [...new Set(duplicateIds)]);
+            console.warn('🔍 Duplicate IDs:', [...new Set(duplicateIds)]);
           }
           
           // Additional state debugging before setting records
-          console.log('🎯 DEBUG: About to set savingsRecords state with:', data.data.savings_records.length, 'records');
-          console.log('🎯 DEBUG: Sample records:', data.data.savings_records.slice(0, 3));
+          console.warn('🎯 DEBUG: About to set savingsRecords state with:', data.data.savings_records.length, 'records');
+          console.warn('🎯 DEBUG: Sample records:', data.data.savings_records.slice(0, 3));
           
           setSavingsRecords(data.data.savings_records);
           setProjectTeam(data.data.project_team);
@@ -739,7 +745,7 @@ function ProjectDetailContent() {
                   </TableHeader>
                   <TableBody>
                     {savingsRecords.map((record, index) => {
-                      console.log('🎯 DEBUG: Rendering record', record.id, 'unit:', record.unit);
+                      console.warn('🎯 DEBUG: Rendering record', record.id, 'unit:', record.unit, 'index:', index);
                       return (
                         <TableRow 
                           key={record.id}
