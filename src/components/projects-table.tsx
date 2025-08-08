@@ -489,7 +489,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        {project.savings_by_currency.length === 0 ? (
+                        {project.actual_savings === 0 ? (
                           <p className="font-medium text-green-600">₺0</p>
                         ) : (
                           <div className="space-y-0.5">
@@ -505,9 +505,6 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                                 }).format(currencyData.savings)}
                               </p>
                             ))}
-                            {project.savings_by_currency.every(c => c.savings === 0) && (
-                              <p className="font-medium text-green-600">₺0</p>
-                            )}
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground">Tasarruf</p>
@@ -515,7 +512,7 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        {project.savings_by_currency.length === 0 ? (
+                        {project.cost_avoidance === 0 ? (
                           <p className="font-medium text-blue-600">₺0</p>
                         ) : (
                           <div className="space-y-0.5">
@@ -531,9 +528,6 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                                 }).format(currencyData.cost_avoidance)}
                               </p>
                             ))}
-                            {project.savings_by_currency.every(c => c.cost_avoidance === 0) && (
-                              <p className="font-medium text-blue-600">₺0</p>
-                            )}
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground">Maliyet Eng.</p>
