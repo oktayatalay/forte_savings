@@ -140,28 +140,44 @@ try {
             $project['last_savings_date'] = date('Y-m-d', strtotime($project['last_savings_date']));
         }
         
-        // Her proje için currency breakdown'ını al
-        $currency_sql = "SELECT 
-            currency,
-            COALESCE(SUM(CASE WHEN type = 'Savings' THEN total_price ELSE 0 END), 0) as savings,
-            COALESCE(SUM(CASE WHEN type = 'Cost Avoidance' THEN total_price ELSE 0 END), 0) as cost_avoidance,
-            COALESCE(SUM(total_price), 0) as total
-            FROM savings_records sr
-            WHERE sr.project_id = ? 
-            GROUP BY currency 
-            HAVING total > 0 
-            ORDER BY total DESC";
+        // Her proje için tüm kayıtları al ve PHP'de hesapla (detail.php ile aynı mantık)
+        $records_sql = "SELECT currency, type, total_price FROM savings_records WHERE project_id = ?";
+        $records_stmt = $pdo->prepare($records_sql);
+        $records_stmt->execute([$project['id']]);
+        $project_records = $records_stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $currency_stmt = $pdo->prepare($currency_sql);
-        $currency_stmt->execute([$project['id']]);
-        $currency_breakdown = $currency_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Format currency breakdown
-        foreach ($currency_breakdown as &$currency_data) {
-            $currency_data['savings'] = floatval($currency_data['savings']);
-            $currency_data['cost_avoidance'] = floatval($currency_data['cost_avoidance']);
-            $currency_data['total'] = floatval($currency_data['total']);
+        // PHP'de currency bazında hesapla (detail.php ile aynı)
+        $stats_by_currency = [];
+        foreach ($project_records as $record) {
+            $currency = $record['currency'];
+            $type = $record['type'];
+            $amount = floatval($record['total_price']);
+            
+            if (!isset($stats_by_currency[$currency])) {
+                $stats_by_currency[$currency] = [
+                    'currency' => $currency,
+                    'savings' => 0,
+                    'cost_avoidance' => 0,
+                    'total' => 0,
+                    'record_count' => 0
+                ];
+            }
+            
+            if ($type === 'Savings') {
+                $stats_by_currency[$currency]['savings'] += $amount;
+            } else {
+                $stats_by_currency[$currency]['cost_avoidance'] += $amount;
+            }
+            
+            $stats_by_currency[$currency]['total'] += $amount;
+            $stats_by_currency[$currency]['record_count']++;
         }
+        
+        // Array'e çevir ve sırala
+        $currency_breakdown = array_values($stats_by_currency);
+        usort($currency_breakdown, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
         
         $project['savings_by_currency'] = $currency_breakdown;
     }
