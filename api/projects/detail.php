@@ -110,6 +110,10 @@ try {
     $savings_stmt->execute([$project_id]);
     $savings_records = $savings_stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // DEBUG: Log SQL results
+    error_log("DEBUG: SQL returned " . count($savings_records) . " records for project_id=$project_id");
+    error_log("DEBUG: Records IDs: " . implode(',', array_column($savings_records, 'id')));
+    
     // Tasarruf kayıtlarını formatla
     foreach ($savings_records as &$record) {
         $record['date'] = date('Y-m-d', strtotime($record['date']));
@@ -138,6 +142,10 @@ try {
     
     // Use cleaned records for further processing
     $savings_records = $unique_records;
+    
+    // DEBUG: Log after cleaning
+    error_log("DEBUG: After cleaning: " . count($savings_records) . " records remain");
+    error_log("DEBUG: Final IDs: " . implode(',', array_column($savings_records, 'id')));
     
     // Proje istatistiklerini currency bazında hesapla
     $stats_by_currency = [];
