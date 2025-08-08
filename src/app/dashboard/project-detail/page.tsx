@@ -744,6 +744,21 @@ function ProjectDetailContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {(() => {
+                      // Log all IDs being rendered in table
+                      const renderingIds = savingsRecords.map(r => r.id);
+                      const uniqueRenderingIds = [...new Set(renderingIds)];
+                      console.warn('🎯 DEBUG: Table rendering IDs:', renderingIds);
+                      console.warn('🎯 DEBUG: Unique table IDs:', uniqueRenderingIds);
+                      if (renderingIds.length !== uniqueRenderingIds.length) {
+                        console.warn('🚨 TABLE RENDERING DUPLICATES!', {
+                          total: renderingIds.length,
+                          unique: uniqueRenderingIds.length,
+                          duplicates: renderingIds.filter((id, index, arr) => arr.indexOf(id) !== index)
+                        });
+                      }
+                      return null;
+                    })()}
                     {savingsRecords.map((record, index) => {
                       console.warn('🎯 DEBUG: Rendering record', record.id, 'unit:', record.unit, 'index:', index);
                       return (
