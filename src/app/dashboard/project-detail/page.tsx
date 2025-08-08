@@ -137,6 +137,37 @@ function ProjectDetailContent() {
         const data = await response.json();
         if (data.success) {
           setProject(data.data.project);
+          
+          // DEBUG: Duplicate records analysis
+          console.log('🔍 DEBUG: Raw savings records from API:', data.data.savings_records);
+          console.log('🔍 DEBUG: Records count:', data.data.savings_records.length);
+          
+          // Check for duplicates by ID
+          const recordIds = data.data.savings_records.map((r: any) => r.id);
+          const uniqueIds = [...new Set(recordIds)];
+          if (recordIds.length !== uniqueIds.length) {
+            console.warn('🚨 DUPLICATE IDs detected in API response!');
+            console.log('🔍 All IDs:', recordIds);
+            console.log('🔍 Unique IDs:', uniqueIds);
+          }
+          
+          // Check for identical records (same content, different IDs)
+          const recordHashes = data.data.savings_records.map((r: any) => 
+            `${r.date}-${r.type}-${r.category}-${r.price}-${r.unit}-${r.currency}`
+          );
+          const uniqueHashes = [...new Set(recordHashes)];
+          if (recordHashes.length !== uniqueHashes.length) {
+            console.warn('🚨 IDENTICAL records detected in API response!');
+            console.log('🔍 Record hashes:', recordHashes);
+            console.log('🔍 Unique hashes:', uniqueHashes);
+            
+            // Find duplicates
+            const duplicateHashes = recordHashes.filter((hash: string, index: number, arr: string[]) => 
+              arr.indexOf(hash) !== index
+            );
+            console.log('🔍 Duplicate hashes:', duplicateHashes);
+          }
+          
           setSavingsRecords(data.data.savings_records);
           setProjectTeam(data.data.project_team);
           setStatistics(data.data.statistics);
@@ -171,6 +202,14 @@ function ProjectDetailContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          console.log('🔍 DEBUG: Refetch after ADD - Records count:', data.data.savings_records.length);
+          const refetchIds = data.data.savings_records.map((r: any) => r.id);
+          const refetchUniqueIds = [...new Set(refetchIds)];
+          if (refetchIds.length !== refetchUniqueIds.length) {
+            console.warn('🚨 DUPLICATE IDs in refetch after ADD!');
+            console.log('🔍 All IDs:', refetchIds);
+            console.log('🔍 Unique IDs:', refetchUniqueIds);
+          }
           setSavingsRecords(data.data.savings_records);
           setStatistics(data.data.statistics);
         }
