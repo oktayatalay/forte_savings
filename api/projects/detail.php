@@ -84,7 +84,7 @@ try {
         }
     }
     
-    // Tasarruf kayıtlarını al - Subquery ile duplicate önleme
+    // Tasarruf kayıtlarını al - Sadece geçerli kullanıcılı kayıtlar
     $savings_sql = "SELECT 
         sr.id,
         sr.project_id,
@@ -100,11 +100,9 @@ try {
         sr.created_by,
         sr.created_at,
         sr.updated_at,
-        (SELECT CONCAT(u.first_name, ' ', u.last_name) 
-         FROM users u 
-         WHERE u.id = sr.created_by 
-         LIMIT 1) as created_by_name
+        CONCAT(u.first_name, ' ', u.last_name) as created_by_name
         FROM savings_records sr
+        INNER JOIN users u ON u.id = sr.created_by
         WHERE sr.project_id = ?
         ORDER BY sr.date DESC, sr.created_at DESC";
     

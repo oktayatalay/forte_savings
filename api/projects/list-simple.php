@@ -141,8 +141,11 @@ try {
             $project['last_savings_date'] = date('Y-m-d', strtotime($project['last_savings_date']));
         }
         
-        // Her proje için tüm kayıtları al ve PHP'de hesapla (detail.php ile aynı mantık)
-        $records_sql = "SELECT currency, type, total_price FROM savings_records WHERE project_id = ?";
+        // Her proje için tüm kayıtları al ve PHP'de hesapla (sadece geçerli kullanıcılı kayıtlar)
+        $records_sql = "SELECT sr.currency, sr.type, sr.total_price 
+                        FROM savings_records sr
+                        INNER JOIN users u ON u.id = sr.created_by
+                        WHERE sr.project_id = ?";
         $records_stmt = $pdo->prepare($records_sql);
         $records_stmt->execute([$project['id']]);
         $project_records = $records_stmt->fetchAll(PDO::FETCH_ASSOC);
