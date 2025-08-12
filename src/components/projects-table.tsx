@@ -489,13 +489,6 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                     </TableCell>
                     <TableCell>
                       <div>
-                        {project.frn === 'FRN-2025-001' && (
-                          <div>
-                            <p className="text-xs text-red-600 font-bold">
-                              DEBUG: savings={project.savings_by_currency.find(c => c.currency === 'TRY')?.savings || 'NONE'}
-                            </p>
-                          </div>
-                        )}
                         
                         {project.savings_by_currency.filter(c => c.savings > 0).length === 0 ? (
                           <p className="text-sm font-medium text-green-600">₺0</p>

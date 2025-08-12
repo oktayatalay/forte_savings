@@ -87,9 +87,8 @@ function ProjectDetailContent() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [savingsRecords, setSavingsRecords] = useState<SavingsRecord[]>([]);
   
-  // Debug savingsRecords state changes - ALL AS WARNINGS TO BE VISIBLE
+  // Track savingsRecords state changes
   useEffect(() => {
-    console.warn('🔄 DEBUG: savingsRecords state changed, count:', savingsRecords.length);
     if (savingsRecords.length > 0) {
       const stateIds = savingsRecords.map(r => r.id);
       const uniqueStateIds = [...new Set(stateIds)];
@@ -159,9 +158,7 @@ function ProjectDetailContent() {
         if (data.success) {
           setProject(data.data.project);
           
-          // DEBUG: Duplicate records analysis - ALL AS WARNINGS TO BE VISIBLE
-          console.warn('🔍 DEBUG: Raw savings records from API:', data.data.savings_records);
-          console.warn('🔍 DEBUG: Records count:', data.data.savings_records.length);
+          // Duplicate records analysis
           
           // Enhanced duplicate debugging  
           const recordAnalysis: any = {};
@@ -190,14 +187,8 @@ function ProjectDetailContent() {
             console.warn('🔍 Duplicate IDs:', [...new Set(duplicateIds)]);
           }
           
-          // Additional state debugging before setting records
-          console.warn('🎯 DEBUG: About to set savingsRecords state with:', data.data.savings_records.length, 'records');
-          console.warn('🎯 DEBUG: Sample records:', data.data.savings_records.slice(0, 3));
-          
-          // Debug: Log all record IDs to see exact API response
+          // Check API response data
           const allIds = data.data.savings_records.map((r: any) => r.id);
-          console.warn('🔍 DEBUG: All IDs from API:', allIds);
-          console.warn('🔍 DEBUG: Last 3 records from API:', data.data.savings_records.slice(-3));
           
           // Check for duplicates in API response
           const uniqueApiIds = [...new Set(allIds)];
@@ -827,16 +818,8 @@ function ProjectDetailContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(() => {
-                      // Log what's being rendered in the table
-                      console.warn('🎨 TABLE DEBUG: Rendering', savingsRecords.length, 'records');
-                      console.warn('🎨 TABLE DEBUG: Record IDs in order:', savingsRecords.map(r => r.id));
-                      console.warn('🎨 TABLE DEBUG: Last record:', savingsRecords[savingsRecords.length - 1]);
-                      return null;
-                    })()}
                     {savingsRecords.map((record, index) => {
                       const isLastRecord = index === savingsRecords.length - 1;
-                      console.warn(`🎨 RENDER: Record ${record.id} at index ${index}${isLastRecord ? ' (LAST)' : ''}`);
                       return (
                         <TableRow 
                           key={`record-${record.id}-${index}`}
