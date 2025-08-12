@@ -257,13 +257,10 @@ function ProjectDetailContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          console.log('🔍 DEBUG: Refetch after ADD - Records count:', data.data.savings_records.length);
           const refetchIds = data.data.savings_records.map((r: any) => r.id);
           const refetchUniqueIds = [...new Set(refetchIds)];
           if (refetchIds.length !== refetchUniqueIds.length) {
             console.warn('🚨 DUPLICATE IDs in refetch after ADD!');
-            console.log('🔍 All IDs:', refetchIds);
-            console.log('🔍 Unique IDs:', refetchUniqueIds);
           }
           
           // Clean data before setting state

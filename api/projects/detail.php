@@ -110,10 +110,6 @@ try {
     $savings_stmt->execute([$project_id]);
     $savings_records = $savings_stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // DEBUG: Log SQL results
-    error_log("DEBUG: SQL returned " . count($savings_records) . " records for project_id=$project_id");
-    error_log("DEBUG: Records IDs: " . implode(',', array_column($savings_records, 'id')));
-    
     // Tasarruf kayıtlarını formatla
     foreach ($savings_records as &$record) {
         $record['date'] = date('Y-m-d', strtotime($record['date']));
@@ -123,10 +119,6 @@ try {
         $record['unit'] = intval($record['unit']);
         $record['total_price'] = floatval($record['total_price']);
     }
-    
-    // DEBUG: After formatting
-    error_log("DEBUG: After formatting: " . count($savings_records) . " records remain");
-    error_log("DEBUG: IDs after formatting: " . implode(',', array_column($savings_records, 'id')));
     
     // Clean duplicates before statistics calculation (in case of data inconsistencies)
     $unique_records = [];
@@ -146,10 +138,6 @@ try {
     
     // Use cleaned records for further processing
     $savings_records = $unique_records;
-    
-    // DEBUG: Log after cleaning
-    error_log("DEBUG: After cleaning: " . count($savings_records) . " records remain");
-    error_log("DEBUG: Final IDs: " . implode(',', array_column($savings_records, 'id')));
     
     // Proje istatistiklerini currency bazında hesapla
     $stats_by_currency = [];
@@ -208,11 +196,6 @@ try {
     $cc_stmt = $pdo->prepare($cc_sql);
     $cc_stmt->execute([$project_id]);
     $project_team = $cc_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // DEBUG: Final dump of savings_records before JSON response
-    error_log("DEBUG: Final response will contain " . count($savings_records) . " savings_records");
-    error_log("DEBUG: Savings records IDs in response: " . implode(',', array_column($savings_records, 'id')));
-    error_log("DEBUG: Full dump: " . print_r($savings_records, true));
     
     $response = [
         'success' => true,
