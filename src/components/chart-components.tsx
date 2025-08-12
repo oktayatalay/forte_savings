@@ -451,20 +451,21 @@ interface InteractiveChartWrapperProps {
   periods?: Array<{ label: string; value: string }>;
   onPeriodChange?: (period: string) => void;
   selectedPeriod?: string;
+  periodLabel?: string;
   className?: string;
 }
 
 export function InteractiveChartWrapper({
   children,
   periods = [
-    { label: 'Son 7 Gün', value: '7d' },
-    { label: 'Son 30 Gün', value: '30d' },
-    { label: 'Son 3 Ay', value: '3m' },
-    { label: 'Son 12 Ay', value: '12m' },
-    { label: 'Tüm Zamanlar', value: 'all' },
+    { label: 'Son 7 Gün', value: '7days' },
+    { label: 'Son 30 Gün', value: '30days' },
+    { label: 'Son 3 Ay', value: '3months' },
+    { label: 'Son 12 Ay', value: '12months' },
   ],
   onPeriodChange,
-  selectedPeriod = '30d',
+  selectedPeriod = '12months',
+  periodLabel,
   className,
 }: InteractiveChartWrapperProps) {
   const [isChanging, setIsChanging] = useState(false);
@@ -487,7 +488,9 @@ export function InteractiveChartWrapper({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Zaman Aralığı:</span>
+            <span className="text-sm font-medium">
+              {periodLabel || periods.find(p => p.value === selectedPeriod)?.label || 'Zaman Aralığı'}
+            </span>
           </div>
           <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
             <SelectTrigger className={cn(

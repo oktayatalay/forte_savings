@@ -68,9 +68,11 @@ export default function DashboardPage() {
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [chartPeriod, setChartPeriod] = useState('30d');
+  const [chartPeriod, setChartPeriod] = useState('12months');
   const [chartData, setChartData] = useState(generateSampleChartData(12));
+  const [realChartData, setRealChartData] = useState<any>(null);
   const [chartLoading, setChartLoading] = useState(false);
+  const [periodLabel, setPeriodLabel] = useState('Son 12 Ay');
   const router = useRouter();
 
   useEffect(() => {
@@ -91,7 +93,7 @@ export default function DashboardPage() {
       setUser(userData);
       
       // Load saved chart period preference
-      const savedPeriod = localStorage.getItem('chart_period_preference') || '30d';
+      const savedPeriod = localStorage.getItem('chart_period_preference') || '12months';
       setChartPeriod(savedPeriod);
       
       // Kullanıcı bilgileri yüklendikten sonra dashboard stats'ı ve chart data'sını fetch et
@@ -157,35 +159,31 @@ export default function DashboardPage() {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
 
-      // Calculate months based on period
-      let months = 12;
-      switch (period) {
-        case '7d':
-          months = 1;
-          break;
-        case '30d':
-          months = 3;
-          break;
-        case '3m':
-          months = 3;
-          break;
-        case '12m':
-          months = 12;
-          break;
-        case 'all':
-          months = 24;
-          break;
-      }
+      // Fetch real trend data from API
+      const response = await fetch(`/api/dashboard/trend-data.php?period=${period}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-      // In a real application, you would fetch data from API based on period
-      // For now, we'll generate sample data with appropriate length
-      const newChartData = generateSampleChartData(months);
-      setChartData(newChartData);
+      const data = await response.json();
+      if (data.success) {
+        setRealChartData(data.data.chart_data);
+        setPeriodLabel(data.data.summary.period_label);
+      } else {
+        console.error('Failed to fetch trend data:', data.error);
+        // Fallback to sample data
+        setRealChartData(generateSampleChartData(12));
+        setPeriodLabel('Son 12 Ay');
+      }
       
       // Save period preference
       localStorage.setItem('chart_period_preference', period);
     } catch (err) {
       console.error('Error fetching chart data:', err);
+      // Fallback to sample data on error
+      setRealChartData(generateSampleChartData(12));
+      setPeriodLabel('Son 12 Ay');
     } finally {
       setChartLoading(false);
     }
@@ -403,6 +401,14 @@ export default function DashboardPage() {
           <InteractiveChartWrapper
             onPeriodChange={handlePeriodChange}
             selectedPeriod={chartPeriod}
+            periodLabel={periodLabel}
+            periods={[
+              { label: 'Son 7 Gün', value: '7days' },
+              { label: 'Son 30 Gün', value: '30days' },
+              { label: 'Son 3 Ay', value: '3months' },
+              { label: 'Son 6 Ay', value: '6months' },
+              { label: 'Son 12 Ay', value: '12months' },
+            ]}
           >
             <div className="relative">
               {chartLoading && (
@@ -411,9 +417,9 @@ export default function DashboardPage() {
                 </div>
               )}
               <SavingsTrendChart
-                data={chartData}
+                data={realChartData || chartData}
                 title="Tasarruf Trendi"
-                description="Aylık tasarruf ve maliyet engelleme performansı"
+                description="Currency bazında aylık tasarruf ve maliyet engelleme performansı"
               />
             </div>
           </InteractiveChartWrapper>
