@@ -10,7 +10,6 @@ import { EnhancedStatsCard, StatsGrid } from '@/components/enhanced-stats-card';
 import { SavingsTrendChart, SavingsComparisonChart, CurrencyDistributionChart, InteractiveChartWrapper, generateSampleChartData } from '@/components/chart-components';
 import { EnhancedNavigation, Breadcrumbs, useBreadcrumbs } from '@/components/enhanced-navigation';
 import { EnhancedSkeleton } from '@/components/loading-states';
-import { GlobalSearch } from '@/components/global-search';
 import { CurrencyMiniCards, CurrencyCards } from '@/components/currency-cards';
 import { Loader2, LogOut, Plus, FileText, Users, TrendingUp, Building, DollarSign, Clock, BarChart3, PieChart, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -275,9 +274,6 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Projelerinizi yönetin ve tasarruflarınızı takip edin.
             </p>
-          </div>
-          <div className="hidden lg:block">
-            <GlobalSearch placeholder="Projeler, müşteriler, raporlar ara..." />
           </div>
         </div>
 

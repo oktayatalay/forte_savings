@@ -24,6 +24,7 @@ interface Project {
   location: string;
   hotels: string;
   po_amount: number;
+  po_currency?: string;
   forte_responsible: string;
   project_director: string;
   forte_cc_person: string;
@@ -58,6 +59,7 @@ interface FormData {
   location: string;
   hotels: string;
   po_amount: string;
+  po_currency: string;
   forte_responsible: string;
   project_director: string;
   forte_cc_person: string;
@@ -108,6 +110,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
     location: '',
     hotels: '',
     po_amount: '',
+    po_currency: 'TRY',
     forte_responsible: '',
     project_director: '',
     forte_cc_person: '',
@@ -120,6 +123,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Düzenleme projesı değiştiğinde form'u initialize et
   useEffect(() => {
@@ -136,6 +140,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
         location: editProject.location || '',
         hotels: editProject.hotels || '',
         po_amount: (editProject.po_amount ?? 0).toString(),
+        po_currency: editProject.po_currency || 'TRY',
         forte_responsible: editProject.forte_responsible || '',
         project_director: editProject.project_director || '',
         forte_cc_person: editProject.forte_cc_person || '',
@@ -159,6 +164,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
         location: '',
         hotels: '',
         po_amount: '',
+        po_currency: 'TRY',
         forte_responsible: '',
         project_director: '',
         forte_cc_person: '',
@@ -178,7 +184,17 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
       [field]: value
     }));
     setError(null);
+    // Clear field error when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
+
+  const getFieldError = (field: string) => fieldErrors[field];
 
   const validateForm = () => {
     const requiredFields: (keyof FormData)[] = [
@@ -226,6 +242,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
 
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const token = localStorage.getItem('auth_token');
@@ -236,6 +253,7 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
       const submitData: any = {
         ...formData,
         po_amount: parseFloat(formData.po_amount),
+        po_currency: formData.po_currency,
         hcp_count: parseInt(formData.hcp_count),
         colleague_count: parseInt(formData.colleague_count),
         external_non_hcp_count: parseInt(formData.external_non_hcp_count)
@@ -261,7 +279,14 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        // API'dan gelen validation errors'ı kontrol et
+        if (data.validation_errors) {
+          setFieldErrors(data.validation_errors);
+          setError('Lütfen eksik/hatalı alanları düzeltin');
+          return;
+        } else {
+          throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        }
       }
 
       if (data.success) {
@@ -272,7 +297,24 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
       }
     } catch (err) {
       console.error('Project creation error:', err);
-      setError(err instanceof Error ? err.message : 'Proje oluştururken hata oluştu');
+      
+      // API'dan gelen validation errors'ı kontrol et
+      if (err instanceof Error) {
+        try {
+          // Error message JSON içeriyorsa parse et
+          const errorData = JSON.parse(err.message);
+          if (errorData.validation_errors) {
+            setFieldErrors(errorData.validation_errors);
+            setError('Lütfen eksik/hatalı alanları düzeltin');
+          } else {
+            setError(err.message);
+          }
+        } catch {
+          setError(err.message);
+        }
+      } else {
+        setError('Proje oluştururken hata oluştu');
+      }
     } finally {
       setLoading(false);
     }
@@ -312,8 +354,12 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
                   placeholder="Proje referans numarası"
                   value={formData.frn}
                   onChange={(e) => handleInputChange('frn', e.target.value)}
+                  className={getFieldError('frn') ? 'border-red-500 focus:border-red-500' : ''}
                   required
                 />
+                {getFieldError('frn') && (
+                  <p className="text-sm text-red-600">{getFieldError('frn')}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -429,17 +475,34 @@ export function ProjectForm({ open, onOpenChange, onSuccess, editProject }: Proj
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="po_amount">PO Tutarı (TRY) *</Label>
-                <Input
-                  id="po_amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  value={formData.po_amount}
-                  onChange={(e) => handleInputChange('po_amount', e.target.value)}
-                  required
-                />
+                <Label htmlFor="po_amount">PO Tutarı *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="po_amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    value={formData.po_amount}
+                    onChange={(e) => handleInputChange('po_amount', e.target.value)}
+                    className="flex-1"
+                    required
+                  />
+                  <Select 
+                    value={formData.po_currency} 
+                    onValueChange={(value) => handleInputChange('po_currency', value)}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TRY">TRY</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

@@ -445,7 +445,6 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                         Maliyet Eng. {getSortIcon('cost_avoidance')}
                       </div>
                     </TableHead>
-                    <TableHead className="font-semibold">Yetki</TableHead>
                     <TableHead className="font-semibold">İşlemler</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -533,9 +532,6 @@ export function ProjectsTable({ className, onProjectUpdated, onNewProject }: Pro
                         )}
                         <p className="text-xs text-muted-foreground">Maliyet Eng.</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      {getPermissionBadge(project.user_permission)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

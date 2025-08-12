@@ -10,8 +10,9 @@ require_once '../auth/middleware.php';
 if (ob_get_length()) ob_clean();
 header('Content-Type: application/json; charset=utf-8');
 
-// Apply comprehensive security
-SecurityMiddleware::setupAPI(['POST', 'OPTIONS']);
+// Apply comprehensive security - disable CSRF for JWT-based auth
+SecurityMiddleware::init(['enable_csrf' => false]);
+SecurityMiddleware::apply('project_create', ['allowed_methods' => ['POST', 'OPTIONS']]);
 
 try {
     // Authentication - Admin ve user'lar yeni proje oluşturabilir
@@ -34,6 +35,7 @@ try {
         'group_out' => ['type' => 'date', 'required' => true],
         'location' => ['type' => 'text', 'required' => true, 'max_length' => 200],
         'po_amount' => ['type' => 'numeric', 'required' => true, 'min' => 0.01],
+        'po_currency' => ['type' => 'text', 'required' => false, 'max_length' => 3],
         'forte_responsible' => ['type' => 'text', 'required' => true, 'max_length' => 100],
         'project_director' => ['type' => 'text', 'required' => true, 'max_length' => 100],
         'forte_cc_person' => ['type' => 'text', 'required' => true, 'max_length' => 100],
@@ -59,6 +61,7 @@ try {
     $location = $validated['location'];
     $hotels = $validated['hotels'] ?? '';
     $po_amount = $validated['po_amount'];
+    $po_currency = $validated['po_currency'] ?? 'TRY';
     $forte_responsible = $validated['forte_responsible'];
     $project_director = $validated['project_director'];
     $forte_cc_person = $validated['forte_cc_person'];
