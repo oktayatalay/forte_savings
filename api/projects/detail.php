@@ -124,6 +124,10 @@ try {
         $record['total_price'] = floatval($record['total_price']);
     }
     
+    // DEBUG: After formatting
+    error_log("DEBUG: After formatting: " . count($savings_records) . " records remain");
+    error_log("DEBUG: IDs after formatting: " . implode(',', array_column($savings_records, 'id')));
+    
     // Clean duplicates before statistics calculation (in case of data inconsistencies)
     $unique_records = [];
     $seen_ids = [];
