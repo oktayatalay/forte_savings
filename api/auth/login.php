@@ -1,6 +1,7 @@
 <?php
 require_once '../security/SecurityMiddleware.php';
 require_once '../config/database.php';
+require_once 'JWTManager.php';
 
 // Apply comprehensive security - disable CSRF for login
 SecurityMiddleware::init(['enable_csrf' => false]);
@@ -82,40 +83,8 @@ try {
         SecureErrorHandler::handleAuthError('Email verification required', 'EMAIL_NOT_VERIFIED', 401);
     }
     
-    // JWT Secret'ı al - fallback ile
-    $jwt_secret = null;
-    try {
-        $settings_stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
-        $settings_stmt->execute();
-        $jwt_secret = $settings_stmt->fetchColumn();
-    } catch (Exception $e) {
-        // system_settings tablosu yoksa veya başka hata varsa fallback kullan
-        error_log("Could not get JWT secret from database: " . $e->getMessage());
-    }
-    
-    // JWT secret yoksa güvenli bir default oluştur (production'da değiştirilmeli)
-    if (empty($jwt_secret)) {
-        $jwt_secret = 'default_jwt_secret_change_in_production_' . hash('sha256', 'forte_savings_2024');
-        error_log("Using fallback JWT secret - CHANGE IN PRODUCTION!");
-    }
-    
-    // JWT Token oluştur
-    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-    $payload = json_encode([
-        'user_id' => $user['id'],
-        'email' => $user['email'],
-        'role' => $user['role'],
-        'exp' => time() + (24 * 60 * 60), // 24 saat
-        'iat' => time()
-    ]);
-    
-    $base64Header = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-    $base64Payload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-    
-    $signature = hash_hmac('sha256', $base64Header . "." . $base64Payload, $jwt_secret, true);
-    $base64Signature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-    
-    $jwt = $base64Header . "." . $base64Payload . "." . $base64Signature;
+    // JWT Token oluştur - Centralized JWT management kullan (30 gün default)
+    $jwt = JWTManager::generateToken($user); // Uses 30-day default expiry
     
     // Refresh token oluştur
     $refresh_token = bin2hex(random_bytes(32));

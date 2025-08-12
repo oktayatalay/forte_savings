@@ -74,9 +74,15 @@ class Database {
     }
 }
 
-// Helper function for global usage
+// Singleton instance for consistent connection
+$_dbInstance = null;
+
+// Helper function for global usage with singleton pattern
 function getDBConnection() {
-    $database = new Database();
-    return $database->getConnection();
+    global $_dbInstance;
+    if ($_dbInstance === null) {
+        $_dbInstance = new Database();
+    }
+    return $_dbInstance->getConnection();
 }
 ?>

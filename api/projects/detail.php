@@ -84,7 +84,7 @@ try {
         }
     }
     
-    // Tasarruf kayıtlarını al - Sadece geçerli kullanıcılı kayıtlar
+    // Tasarruf kayıtlarını al - System Admin kayıtlarını da dahil et
     $savings_sql = "SELECT 
         sr.id,
         sr.project_id,
@@ -100,9 +100,9 @@ try {
         sr.created_by,
         sr.created_at,
         sr.updated_at,
-        CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+        COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'System Admin') as created_by_name
         FROM savings_records sr
-        INNER JOIN users u ON u.id = sr.created_by
+        LEFT JOIN users u ON u.id = sr.created_by
         WHERE sr.project_id = ?
         ORDER BY sr.date DESC, sr.created_at DESC";
     

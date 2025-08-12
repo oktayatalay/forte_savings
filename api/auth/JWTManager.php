@@ -173,6 +173,50 @@ class JWTManager {
     }
     
     /**
+     * Initialize JWT secret (used by init script)
+     */
+    public static function initializeJWTSecret($force = false) {
+        try {
+            require_once __DIR__ . '/../config/database.php';
+            
+            if (self::$pdo === null) {
+                self::$pdo = getDBConnection();
+            }
+            
+            // Check if secret already exists
+            if (!$force) {
+                $stmt = self::$pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
+                $stmt->execute();
+                $existing = $stmt->fetchColumn();
+                
+                if ($existing) {
+                    return $existing;
+                }
+            }
+            
+            // Generate new secret
+            $secret = 'forte_jwt_' . hash('sha256', 'forte_savings_' . time() . '_' . random_bytes(16));
+            
+            // Save to database
+            $stmt = self::$pdo->prepare("
+                INSERT INTO system_settings (setting_key, setting_value, created_at, updated_at) 
+                VALUES ('jwt_secret', ?, NOW(), NOW())
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()
+            ");
+            $stmt->execute([$secret]);
+            
+            // Clear cached secret to force reload
+            self::$jwtSecret = null;
+            
+            return $secret;
+            
+        } catch (Exception $e) {
+            error_log("JWT secret initialization failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Test JWT operations
      */
     public static function test() {

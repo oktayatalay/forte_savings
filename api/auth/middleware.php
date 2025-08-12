@@ -1,76 +1,11 @@
 <?php
 require_once '../config/database.php';
+require_once 'JWTManager.php';
 
 function verifyJWT($token) {
     try {
-        $pdo = getDBConnection();
-        
-        // JWT Secret'ı al - fallback ile (login.php ile uyumlu)
-        $jwt_secret = null;
-        try {
-            $stmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'jwt_secret'");
-            $stmt->execute();
-            $jwt_secret = $stmt->fetchColumn();
-        } catch (Exception $e) {
-            error_log("Could not get JWT secret from database: " . $e->getMessage());
-        }
-        
-        // JWT secret yoksa güvenli bir default oluştur (login.php ile aynı fallback)
-        if (empty($jwt_secret)) {
-            $jwt_secret = 'default_jwt_secret_change_in_production_' . hash('sha256', 'forte_savings_2024');
-            error_log("Using fallback JWT secret in middleware - CHANGE IN PRODUCTION!");
-        }
-        
-        // JWT'yi parçala
-        $parts = explode('.', $token);
-        if (count($parts) !== 3) {
-            return false;
-        }
-        
-        $header = $parts[0];
-        $payload = $parts[1];
-        $signature = $parts[2];
-        
-        // Signature'ı doğrula
-        $expected_signature = str_replace(['+', '/', '='], ['-', '_', ''], 
-            base64_encode(hash_hmac('sha256', $header . '.' . $payload, $jwt_secret, true))
-        );
-        
-        if (!hash_equals($signature, $expected_signature)) {
-            return false;
-        }
-        
-        // Payload'ı decode et
-        $payload_data = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $payload)), true);
-        
-        if (!$payload_data) {
-            return false;
-        }
-        
-        // Expiration kontrolü
-        if (isset($payload_data['exp']) && $payload_data['exp'] < time()) {
-            return false;
-        }
-        
-        // Kullanıcı var mı ve aktif mi kontrol et
-        $user_stmt = $pdo->prepare("
-            SELECT id, email, role, is_active 
-            FROM users 
-            WHERE id = ? AND is_active = TRUE
-        ");
-        $user_stmt->execute([$payload_data['user_id']]);
-        $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$user) {
-            return false;
-        }
-        
-        return [
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'role' => $user['role'],
-            'payload' => $payload_data
-        ];
+        // Use centralized JWT verification - it already handles user validation
+        return JWTManager::verifyToken($token);
         
     } catch (Exception $e) {
         error_log("JWT verification error: " . $e->getMessage());
