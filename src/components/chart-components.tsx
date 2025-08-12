@@ -485,13 +485,7 @@ export function InteractiveChartWrapper({
   return (
     <div className={cn("space-y-4", className)}>
       {onPeriodChange && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium">
-              {periodLabel || periods.find(p => p.value === selectedPeriod)?.label || 'Zaman Aralığı'}
-            </span>
-          </div>
+        <div className="flex items-center justify-end">
           <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
             <SelectTrigger className={cn(
               "w-40 transition-all duration-200",
