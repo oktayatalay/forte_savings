@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAuth() {
+            const resultsDiv = document.getElementById('results');
+
+            // Get token from localStorage (if user is logged in)
+            const token = localStorage.getItem('auth_token');
+
+            resultsDiv.innerHTML = `
+                <h2>Step 1: Token Check</h2>
+                <p><strong>Token found:</strong> ${token ? 'Yes' : 'No'}</p>
+                <p><strong>Token preview:</strong> ${token ? token.substring(0, 20) + '...' : 'None'}</p>
+            `;
+
+            if (!token) {
+                resultsDiv.innerHTML += '<p><strong>Result:</strong> No token found in localStorage. Please login first.</p>';
+                return;
+            }
+
+            try {
+                resultsDiv.innerHTML += '<h2>Step 2: Testing API with Token</h2>';
+
+                const response = await fetch('/api/debug/auth-test.php', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                resultsDiv.innerHTML += `
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<p><strong>Error:</strong> ${error.message}</p>`;
+            }
+        }
+
+        // Auto run test
+        testAuth();
+    </script>
+</body>
+</html>
