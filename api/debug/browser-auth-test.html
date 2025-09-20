@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .step { margin: 15px 0; padding: 10px; border-left: 3px solid #007cba; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Authentication Test</h1>
+    <div id="results">Loading...</div>
+
+    <script>
+        async function testAuth() {
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                // Step 1: Check token
+                resultsDiv.innerHTML = '<div class="step"><h2>Step 1: Token Check</h2><p>Checking localStorage...</p></div>';
+
+                const token = localStorage.getItem('auth_token');
+                const user = localStorage.getItem('user_data');
+
+                let step1Html = `
+                    <div class="step">
+                        <h2>Step 1: Token Check</h2>
+                        <p><strong>Token found:</strong> ${token ? 'Yes' : 'No'}</p>
+                        <p><strong>Token preview:</strong> ${token ? token.substring(0, 30) + '...' : 'None'}</p>
+                        <p><strong>User data:</strong> ${user ? 'Yes' : 'No'}</p>
+                `;
+
+                if (!token) {
+                    step1Html += '<p style="color: red;"><strong>❌ Result:</strong> No token found. Please login at <a href="/dashboard/">dashboard</a> first.</p>';
+                    step1Html += '</div>';
+                    resultsDiv.innerHTML = step1Html;
+                    return;
+                }
+
+                step1Html += '<p style="color: green;"><strong>✅ Token found!</strong></p></div>';
+
+                // Step 2: Test API call
+                step1Html += '<div class="step"><h2>Step 2: Testing API with Token</h2><p>Sending request to auth-test.php...</p></div>';
+                resultsDiv.innerHTML = step1Html;
+
+                const response = await fetch('/api/debug/auth-test.php', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                const step2Html = `
+                    <div class="step">
+                        <h2>Step 2: API Test Results</h2>
+                        <p><strong>Status Code:</strong> ${response.status}</p>
+                        <p><strong>Status Text:</strong> ${response.statusText}</p>
+                        <p><strong>Response:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = step1Html + step2Html;
+
+                // Step 3: Analysis
+                let analysisHtml = '<div class="step"><h2>Step 3: Analysis</h2>';
+
+                if (response.ok && data.step === 'success') {
+                    analysisHtml += '<p style="color: green;"><strong>✅ Authentication working perfectly!</strong></p>';
+                    analysisHtml += '<p>The issue might be in how the dashboard is making API calls.</p>';
+                } else if (data.error === 'No authorization header found') {
+                    analysisHtml += '<p style="color: red;"><strong>❌ Token not reaching backend</strong></p>';
+                    analysisHtml += '<p>Backend cannot see the Authorization header. This could be:</p>';
+                    analysisHtml += '<ul><li>Server configuration issue</li><li>Header being stripped</li><li>CORS problem</li></ul>';
+                } else if (data.error && data.error.includes('Token verification failed')) {
+                    analysisHtml += '<p style="color: red;"><strong>❌ JWT Token invalid</strong></p>';
+                    analysisHtml += '<p>Token format is wrong or JWT secret mismatch.</p>';
+                } else {
+                    analysisHtml += '<p style="color: orange;"><strong>⚠️ Partial failure</strong></p>';
+                    analysisHtml += '<p>Check the response details above for specific error.</p>';
+                }
+
+                analysisHtml += '</div>';
+                resultsDiv.innerHTML = step1Html + step2Html + analysisHtml;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="step">
+                        <h2>❌ JavaScript Error</h2>
+                        <p style="color: red;"><strong>Error:</strong> ${error.message}</p>
+                        <pre>${error.stack}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto run test when page loads
+        window.onload = testAuth;
+    </script>
+</body>
+</html>
