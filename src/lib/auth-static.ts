@@ -92,7 +92,7 @@ export class AuthManager {
   static async authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
     const token = this.getToken();
 
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
